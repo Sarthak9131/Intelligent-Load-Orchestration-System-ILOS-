@@ -19,6 +19,8 @@
 - [Running Tests](#running-tests)
 - [Performance Metrics](#performance-metrics)
 - [Extending the System](#extending-the-system)
+- [Interview Preparation](#interview-preparation)
+- [Practical AI/ML Roadmap](#practical-aiml-roadmap)
 
 ---
 
@@ -235,6 +237,12 @@ For high-volume deployments:
 - Deploy each agent phase as an independent Kubernetes service
 - Add Prometheus metrics scraping from `get_performance_dashboard()`
 - Integrate with your core banking system via REST adapters
+
+## Interview Preparation
+
+Use [docs/interview-prep.md](docs/interview-prep.md) as a project-grounded study plan for AI/ML engineering interviews. It includes a concise architecture walkthrough, Python and ML fundamentals, LLM production concerns, likely questions, project gaps to discuss honestly, and a four-week practice plan.
+
+For a hands-on progression from Python foundations to senior-level system design, follow [docs/practical-ai-ml-roadmap.md](docs/practical-ai-ml-roadmap.md). Start with its first lab and share your implementation for review.
 
 ---
 
