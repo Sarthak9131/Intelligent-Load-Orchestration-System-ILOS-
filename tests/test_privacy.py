@@ -6,6 +6,7 @@ import pytest
 
 import src.orchestrator as orchestration
 from src.models import ApplicationStatus
+from src.orchestrator import LoanProcessingOrchestrator
 from src.privacy import (
     REDACTED_ADDRESS,
     REDACTED_DOB,
@@ -16,7 +17,6 @@ from src.privacy import (
     mask_pii,
     mask_sensitive_data,
 )
-from src.orchestrator import LoanProcessingOrchestrator
 from src.schemas import (
     DecisionLabel,
     FinalDecisionOutput,

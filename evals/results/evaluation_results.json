@@ -1,10 +1,10 @@
 {
   "average_latency_seconds_by_phase": {
-    "approval_workflow": 0.00016554866587587943,
-    "document_processing": 0.00024715199950151143,
-    "risk_assessment": 0.00014918333443347364
+    "approval_workflow": 0.0001713080001839747,
+    "document_processing": 0.00025913933389044055,
+    "risk_assessment": 0.00015495399963886788
   },
-  "average_total_latency_seconds": 0.0019855606672354044,
+  "average_total_latency_seconds": 0.002090171333014344,
   "case_predictions": [
     {
       "case_id": "SYN-001",

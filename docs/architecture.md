@@ -53,7 +53,9 @@ changing providers. Model calls require provider credentials.
   validated credit-risk model or deterministic underwriting policy.
 - A compliance agent response is not legal advice or proof of regulatory
   compliance.
-- The in-memory ADK session service is process-local and is not durable.
+- `src/session_store.py` defines a provider interface and an in-memory ADK
+  implementation. Redis/Postgres providers are not implemented; current session
+  state is process-local and not durable.
 - The audit log is a prototype artifact, not a tamper-evident or access-
   controlled compliance ledger.
 - Evaluation on generated labels describes behavior on those synthetic cases

@@ -3,11 +3,12 @@ Unit tests for Loan Processing Multi-Agent System
 Run: pytest tests/
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from src.models import ApplicationStatus, LoanApplication, ProcessingResult, RiskLevel
-from src.orchestrator import _parse_status
+from unittest.mock import patch
 
+import pytest
+
+from src.models import ApplicationStatus, LoanApplication, ProcessingResult
+from src.orchestrator import _parse_status
 
 # ── Model Tests ────────────────────────────────────────────────────────────────
 

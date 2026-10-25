@@ -6,7 +6,8 @@ Run: python main.py
 import asyncio
 import json
 import logging
-import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -101,9 +102,12 @@ async def main():
         print(f"  {key:<35}: {value}")
 
     # ── Save results ───────────────────────────────────────────────────────────
-    output_path = "results.json"
-    with open(output_path, "w") as f:
-        json.dump([r.to_dict() for r in results], f, indent=2)
+    output_path = Path("results.json")
+    await asyncio.to_thread(
+        output_path.write_text,
+        json.dumps([r.to_dict() for r in results], indent=2),
+        encoding="utf-8",
+    )
     print(f"\nResults saved to {output_path}")
 
 

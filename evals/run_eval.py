@@ -19,7 +19,6 @@ from evals.generate_dataset import (
 from src.models import ApplicationStatus
 from src.orchestrator import LoanProcessingOrchestrator
 
-
 DEFAULT_RESULTS = Path(__file__).parent / "results"
 CLASS_LABELS = ("approve", "conditional", "reject")
 
@@ -109,8 +108,10 @@ async def evaluate(
             "The stub uses deterministic demonstration rules rather than an LLM.",
             "Repeated deterministic stub runs measure code-path consistency only.",
             "Token counts in stub mode are rough character-based estimates.",
-            "The label policy and stub policy share broad criteria; scores are not "
-            "independent evidence of model validity.",
+            (
+                "The label policy and stub policy share broad criteria; scores are not "
+                "independent evidence of model validity."
+            ),
         ],
     }
     return summary, case_runs
@@ -224,10 +225,10 @@ def _metric_label(status: ApplicationStatus) -> str:
 
 def _majority_label(predictions: list[str]) -> str:
     counts = Counter(predictions)
-    return sorted(counts, key=lambda label: (-counts[label], label))[0]
+    return min(counts, key=lambda label: (-counts[label], label))
 
 
-def _ratio(numerator: int | float, denominator: int | float) -> float:
+def _ratio(numerator: float, denominator: float) -> float:
     return numerator / denominator if denominator else 0.0
 
 
@@ -299,10 +300,14 @@ def _render_markdown(summary: dict[str, Any]) -> str:
             "",
             "## Repeat consistency",
             "",
-            f"- All repeats identical: "
-            f"{summary['repeat_consistency']['all_repeats_identical_rate']:.4f}",
-            f"- Mean pairwise decision agreement: "
-            f"{summary['repeat_consistency']['mean_pairwise_decision_agreement']:.4f}",
+            (
+                f"- All repeats identical: "
+                f"{summary['repeat_consistency']['all_repeats_identical_rate']:.4f}"
+            ),
+            (
+                f"- Mean pairwise decision agreement: "
+                f"{summary['repeat_consistency']['mean_pairwise_decision_agreement']:.4f}"
+            ),
             "",
             "## Average latency per phase",
             "",

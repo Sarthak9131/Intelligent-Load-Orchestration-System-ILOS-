@@ -4,13 +4,14 @@ Risk Analyst → Compliance Reviewer → Final Underwriter
 """
 
 from google.adk.agents import Agent, SequentialAgent
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
 from google.adk.models.lite_llm import LiteLlm
+from google.adk.runners import Runner
+
+from config.settings import LLM_MODEL
 
 from ..agent_observability import after_agent, after_model, before_agent, on_model_error
-from config.settings import LLM_MODEL
 from ..schemas import ComplianceReviewOutput, FinalDecisionOutput, RiskReviewOutput
+from ..session_store import create_session_service
 
 MODEL = LiteLlm(model=LLM_MODEL)
 
@@ -117,7 +118,7 @@ approval_workflow = SequentialAgent(
 )
 
 # ── Runner ─────────────────────────────────────────────────────────────────────
-_session_service = InMemorySessionService()
+_session_service = create_session_service()
 approval_runner = Runner(
     agent=approval_workflow,
     app_name="ApprovalWorkflow",

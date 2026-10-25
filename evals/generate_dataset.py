@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-
 DEFAULT_DATASET = Path(__file__).parent / "data" / "synthetic_loan_applications.jsonl"
 
 

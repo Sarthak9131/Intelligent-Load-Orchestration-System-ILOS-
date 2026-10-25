@@ -8,7 +8,6 @@ from typing import Any
 from google.adk.agents import Agent, ParallelAgent, SequentialAgent
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
 
 from config.settings import LLM_MODEL
 from src.agent_observability import after_agent, after_model, before_agent, on_model_error
@@ -18,6 +17,7 @@ from src.orchestrator import (
     _run_agent,
 )
 from src.privacy import mask_pii
+from src.session_store import create_session_service
 
 from .schemas import (
     AuthorizationStatus,
@@ -36,12 +36,6 @@ from .schemas import (
 )
 
 MODEL = LiteLlm(model=LLM_MODEL)
-_CALLBACKS = {
-    "before_agent_callback": before_agent,
-    "after_agent_callback": after_agent,
-    "after_model_callback": after_model,
-    "on_model_error_callback": on_model_error,
-}
 
 
 intake_agent = Agent(
@@ -49,39 +43,51 @@ intake_agent = Agent(
     model=MODEL,
     input_schema=PriorAuthorizationRequest,
     output_schema=IntakeOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""Normalize the synthetic request and identify missing data.
 Return only JSON matching the output schema. Do not invent clinical facts.""",
-    **_CALLBACKS,
 )
 
 clinical_criteria_agent = Agent(
     name="ClinicalCriteriaCheckAgent",
     model=MODEL,
     output_schema=ClinicalCriteriaOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""Evaluate only the synthetic criteria flags supplied in the
 request. If criteria are absent or ambiguous, return insufficient. Do not
 provide real medical advice. Return only JSON matching the output schema.""",
-    **_CALLBACKS,
 )
 
 coverage_eligibility_agent = Agent(
     name="CoverageEligibilityCheckAgent",
     model=MODEL,
     output_schema=CoverageEligibilityOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""Evaluate only the synthetic coverage flags supplied in the
 request. Unknown coverage must be insufficient. Return only JSON matching the
 output schema.""",
-    **_CALLBACKS,
 )
 
 documentation_completeness_agent = Agent(
     name="DocumentationCompletenessCheckAgent",
     model=MODEL,
     output_schema=DocumentationCompletenessOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""Check whether the synthetic clinical notes and prescriber
 information flags are present. Return missing items explicitly. Return only
 JSON matching the output schema.""",
-    **_CALLBACKS,
 )
 
 parallel_checks = ParallelAgent(
@@ -97,20 +103,26 @@ reviewer_agent = Agent(
     name="PriorAuthorizationReviewerAgent",
     model=MODEL,
     output_schema=ReviewerOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""Review the independent synthetic check results. Escalate
 unknown or incomplete evidence to a human reviewer. Do not make a medical
 judgment beyond the supplied synthetic flags. Return only JSON.""",
-    **_CALLBACKS,
 )
 
 final_reviewer_agent = Agent(
     name="PriorAuthorizationFinalReviewerAgent",
     model=MODEL,
     output_schema=FinalAuthorizationDecision,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""Issue a synthetic workflow result based on the prior
 reviewer. If human review is required, provide a specific human_review_reason.
 This is a prototype and not a coverage determination. Return only JSON.""",
-    **_CALLBACKS,
 )
 
 reviewer_chain = SequentialAgent(
@@ -149,7 +161,7 @@ class PriorAuthorizationOrchestrator:
                     audit,
                     input_hash,
                 )
-            session_service = InMemorySessionService()
+            session_service = create_session_service()
             runner = Runner(
                 agent=prior_authorization_workflow,
                 app_name="PriorAuthorizationWorkflow",

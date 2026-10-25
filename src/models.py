@@ -4,7 +4,6 @@ Data models for the Loan Processing Multi-Agent System.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional
 
 
 class ApplicationStatus(Enum):
@@ -35,7 +34,7 @@ class LoanApplication:
     monthly_debts: float
     savings: float
     loan_purpose: str
-    application_id: Optional[str] = None
+    application_id: str | None = None
     documentation_complete: bool = True
     employment_type: str = "unknown"
 
@@ -57,8 +56,8 @@ class RiskAssessment:
     credit_risk: str = ""
     employment_risk: str = ""
     collateral_risk: str = ""
-    factors: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
+    factors: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -70,14 +69,14 @@ class ProcessingResult:
     timestamp: str
     risk_assessment: str = ""
     compliance_notes: str = ""
-    loan_terms: Optional[dict] = None
-    next_steps: List[str] = field(default_factory=list)
-    reason_codes: List[dict] = field(default_factory=list)
+    loan_terms: dict | None = None
+    next_steps: list[str] = field(default_factory=list)
+    reason_codes: list[dict] = field(default_factory=list)
     explanation: str = ""
-    confidence: Optional[float] = None
-    human_review_reason: Optional[str] = None
-    phase_latencies: Dict[str, float] = field(default_factory=dict)
-    token_usage: Dict[str, int] = field(default_factory=dict)
+    confidence: float | None = None
+    human_review_reason: str | None = None
+    phase_latencies: dict[str, float] = field(default_factory=dict)
+    token_usage: dict[str, int] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {

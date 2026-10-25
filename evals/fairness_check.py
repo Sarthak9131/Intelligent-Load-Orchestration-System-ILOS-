@@ -11,7 +11,6 @@ from typing import Any
 from evals.generate_dataset import DEFAULT_DATASET, generate_records
 from src.orchestrator import LoanProcessingOrchestrator
 
-
 DEFAULT_OUTPUT = Path(__file__).parent / "results" / "fairness_check.json"
 LIMITATIONS = [
     "This is a small synthetic proxy perturbation test, not a legal fairness assessment.",
@@ -100,8 +99,10 @@ def _write_report(result: dict[str, Any], destination: Path) -> None:
         "",
         f"- Mode: `{result['llm_mode']}`",
         f"- Paired comparisons: {result['pair_count']}",
-        f"- Decision disagreement rate: "
-        f"{result['decision_disagreement_rate']:.4f}",
+        (
+            f"- Decision disagreement rate: "
+            f"{result['decision_disagreement_rate']:.4f}"
+        ),
         f"- Proxies changed one at a time: {', '.join(result['proxies_tested'])}",
         "",
         "## Limitations",

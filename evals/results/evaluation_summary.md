@@ -32,9 +32,9 @@
 
 ## Average latency per phase
 
-- approval_workflow: 0.000166s
-- document_processing: 0.000247s
-- risk_assessment: 0.000149s
+- approval_workflow: 0.000171s
+- document_processing: 0.000259s
+- risk_assessment: 0.000155s
 
 ## Failure-case analysis
 

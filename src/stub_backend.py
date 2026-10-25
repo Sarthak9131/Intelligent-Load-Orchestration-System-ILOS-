@@ -3,6 +3,7 @@
 import json
 import math
 import re
+from collections.abc import AsyncIterator
 from types import SimpleNamespace
 from typing import Any
 
@@ -27,7 +28,7 @@ class StubAgentRunner:
         user_id: str,
         session_id: str,
         new_message: Any,
-    ):
+    ) -> AsyncIterator[Any]:
         """Yield one structured final response with estimated token metadata."""
         message = "".join(
             part.text
@@ -112,7 +113,7 @@ def _parse_text_application(text: str) -> dict[str, Any]:
     employment_type = "self_employed" if re.search(
         r"self.employed|freelance|gig", text, re.IGNORECASE
     ) else "employed"
-    application = {
+    application: dict[str, Any] = {
         "annual_income": number(r"Annual Income:\s*\$?([\d,]+)"),
         "monthly_debts": number(r"Monthly Debts:\s*\$?([\d,]+)"),
         "loan_amount": number(r"Requested Loan Amount:\s*\$?([\d,]+)"),
@@ -153,9 +154,11 @@ def _risk_score(application: dict[str, Any]) -> float:
     score = max(0.0, 700 - credit) * 0.3
     score += max(0.0, dti - 0.3) * 40
     score += max(0.0, lti - 3) * 5
-    if application.get("employment_type") == "self_employed":
-        if _number(application.get("employment_years")) < 2:
-            score += 10
+    if (
+        application.get("employment_type") == "self_employed"
+        and _number(application.get("employment_years")) < 2
+    ):
+        score += 10
     if not application.get("documentation_complete", True):
         score += 10
     if application.get("missing_fields") or application.get("conflicting_fields"):

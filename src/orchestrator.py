@@ -7,13 +7,17 @@ import logging
 import os
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TypeVar
 
+from google.adk.runners import Runner
+from google.genai.errors import APIError as GoogleAPIError
+from litellm.exceptions import APIError as LiteLLMAPIError
 from pydantic import BaseModel, ValidationError
 
 from config.settings import AUDIT_DIR, LLM_MODE, MAX_AGENT_ATTEMPTS
+
 from .agents.approval_workflow import approval_runner
 from .agents.document_pipeline import pipeline_runner
 from .agents.risk_team import risk_runner
@@ -27,6 +31,7 @@ from .schemas import (
     RiskAggregationOutput,
     ValidationOutput,
 )
+from .stub_backend import StubAgentRunner
 
 logger = logging.getLogger(__name__)
 SchemaT = TypeVar("SchemaT", bound=BaseModel)
@@ -75,7 +80,7 @@ class ApplicationAuditTrail:
         else:
             payload = {
                 "application_id": self.application_id,
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": datetime.now(UTC).isoformat(),
                 "events": self.events,
             }
         temporary.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
@@ -87,7 +92,10 @@ class LoanProcessingOrchestrator:
     """Run document, risk, and sequential approval phases with typed boundaries."""
 
     def __init__(self, llm_mode: str | None = None) -> None:
-        mode = (llm_mode or os.getenv("LLM_MODE", LLM_MODE)).lower()
+        mode = (llm_mode or os.getenv("LLM_MODE") or LLM_MODE).lower()
+        self.pipeline_runner: Runner | StubAgentRunner
+        self.risk_runner: Runner | StubAgentRunner
+        self.approval_runner: Runner | StubAgentRunner
         if mode == "stub":
             from .stub_backend import build_stub_runners
 
@@ -116,7 +124,7 @@ class LoanProcessingOrchestrator:
         """Run every workflow phase; validation failures explicitly require review."""
         start_time = time.perf_counter()
         application_id = (
-            f"LA-{datetime.now(timezone.utc).strftime('%Y%m%d')}-"
+            f"LA-{datetime.now(UTC).strftime('%Y%m%d')}-"
             f"{uuid.uuid4().hex[:6].upper()}"
         )
         audit = ApplicationAuditTrail(application_id)
@@ -201,7 +209,7 @@ class LoanProcessingOrchestrator:
                 status=_status_for_decision(approval_result.decision.value),
                 decision=mask_pii(approval_result.explanation),
                 processing_time=time.perf_counter() - start_time,
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
                 risk_assessment=risk_result.model_dump_json(),
                 compliance_notes="Compliance status must be verified by an accountable reviewer.",
                 reason_codes=[
@@ -332,23 +340,16 @@ async def _run_agent(
                 }
             )
             return parsed, elapsed, tokens
-        except (ValidationError, ValueError, RuntimeError, OSError) as exc:
+        except (
+            ValidationError,
+            ValueError,
+            RuntimeError,
+            OSError,
+            GoogleAPIError,
+            LiteLLMAPIError,
+        ) as exc:
             elapsed += time.perf_counter() - started
             last_error = _safe_error_summary(exc)
-            audit.record(
-                {
-                    "agent_name": agent_name,
-                    "latency_ms": round(elapsed * 1000, 3),
-                    "token_usage": tokens,
-                    "input_hash": input_hash,
-                    "output": None,
-                    "errors": [last_error],
-                    "attempt": attempt,
-                }
-            )
-        except Exception as exc:
-            elapsed += time.perf_counter() - started
-            last_error = f"{type(exc).__name__}: agent invocation failed."
             audit.record(
                 {
                     "agent_name": agent_name,
@@ -470,7 +471,7 @@ def _human_review_result(
         status=ApplicationStatus.NEEDS_HUMAN_REVIEW,
         decision=f"Automated processing could not safely complete. {reason}",
         processing_time=processing_time,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         human_review_reason=reason,
         reason_codes=[
             {
@@ -498,7 +499,7 @@ def _status_for_decision(decision: str) -> ApplicationStatus:
     }[decision]
 
 
-def _percentage(value: int | float, total: int) -> str:
+def _percentage(value: float, total: int) -> str:
     """Format an observed metric or mark it unavailable when no data exists."""
     return f"{float(value) / total * 100:.1f}%" if total else "N/A"
 

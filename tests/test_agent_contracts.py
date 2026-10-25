@@ -7,6 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 import src.orchestrator as orchestration
+from src.agent_observability import after_agent, before_agent
 from src.models import ApplicationStatus
 from src.orchestrator import (
     AgentContractError,
@@ -14,7 +15,6 @@ from src.orchestrator import (
     LoanProcessingOrchestrator,
     _run_agent,
 )
-from src.agent_observability import after_agent, before_agent
 from src.schemas import (
     DecisionLabel,
     FinalDecisionOutput,

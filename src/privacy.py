@@ -2,6 +2,7 @@
 
 import re
 from collections.abc import Mapping
+from functools import partial
 from typing import Any
 
 REDACTED_NAME = "[REDACTED_NAME]"
@@ -94,16 +95,12 @@ def mask_pii(value: str) -> str:
     names = _extract_names(masked)
     for key, pattern in _JSON_FIELDS.items():
         masked = pattern.sub(
-            lambda match, replacement=_TOKENS[key]: (
-                f'{match.group(1)}"{replacement}"'
-            ),
+            partial(_replace_json_field, replacement=_TOKENS[key]),
             masked,
         )
     for pattern, replacement, _ in _LABELED_FIELDS:
         masked = pattern.sub(
-            lambda match, token=replacement: (
-                f"{match.group(1)}{match.group(2)}{token}"
-            ),
+            partial(_replace_labeled_field, replacement=replacement),
             masked,
         )
     for name in sorted(names, key=len, reverse=True):
@@ -127,6 +124,14 @@ def mask_pii(value: str) -> str:
         masked,
     )
     return masked
+
+
+def _replace_json_field(match: re.Match[str], replacement: str) -> str:
+    return f'{match.group(1)}"{replacement}"'
+
+
+def _replace_labeled_field(match: re.Match[str], replacement: str) -> str:
+    return f"{match.group(1)}{match.group(2)}{replacement}"
 
 
 def mask_sensitive_data(value: Any) -> Any:

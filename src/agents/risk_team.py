@@ -4,12 +4,12 @@ Income · Credit · Employment · Collateral — all running simultaneously.
 """
 
 from google.adk.agents import Agent, ParallelAgent, SequentialAgent
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
 from google.adk.models.lite_llm import LiteLlm
+from google.adk.runners import Runner
+
+from config.settings import LLM_MODEL
 
 from ..agent_observability import after_agent, after_model, before_agent, on_model_error
-from config.settings import LLM_MODEL
 from ..schemas import (
     CollateralEvaluationOutput,
     CreditAssessmentOutput,
@@ -17,6 +17,7 @@ from ..schemas import (
     IncomeAnalysisOutput,
     RiskAggregationOutput,
 )
+from ..session_store import create_session_service
 
 MODEL = LiteLlm(model=LLM_MODEL)
 
@@ -192,7 +193,7 @@ risk_workflow = SequentialAgent(
 )
 
 # ── Runner ─────────────────────────────────────────────────────────────────────
-_session_service = InMemorySessionService()
+_session_service = create_session_service()
 risk_runner = Runner(
     agent=risk_workflow,
     app_name="RiskAssessmentWorkflow",
