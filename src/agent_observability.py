@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 _lock = threading.RLock()
 _agent_started: dict[tuple[str, str], float] = {}
 _agent_usage: dict[tuple[str, str], dict[str, int]] = {}
-_APPLICATION_ID = re.compile(r"LA-\d{8}-[A-F0-9]{6}")
+_APPLICATION_ID = re.compile(
+    r"(LA-\d{8}-[A-F0-9]{6}|PA-SYN-[A-Z0-9-]+?)(?=-attempt-\d|$)"
+)
 
 
 def before_agent(context: Any) -> None:
