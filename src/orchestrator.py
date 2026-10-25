@@ -13,7 +13,7 @@ from typing import Any, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from config.settings import AUDIT_DIR, MAX_AGENT_ATTEMPTS
+from config.settings import AUDIT_DIR, LLM_MODE, MAX_AGENT_ATTEMPTS
 from .agents.approval_workflow import approval_runner
 from .agents.document_pipeline import pipeline_runner
 from .agents.risk_team import risk_runner
@@ -84,10 +84,23 @@ class ApplicationAuditTrail:
 class LoanProcessingOrchestrator:
     """Run document, risk, and sequential approval phases with typed boundaries."""
 
-    def __init__(self) -> None:
-        self.pipeline_runner = pipeline_runner
-        self.risk_runner = risk_runner
-        self.approval_runner = approval_runner
+    def __init__(self, llm_mode: str | None = None) -> None:
+        mode = (llm_mode or os.getenv("LLM_MODE", LLM_MODE)).lower()
+        if mode == "stub":
+            from .stub_backend import build_stub_runners
+
+            (
+                self.pipeline_runner,
+                self.risk_runner,
+                self.approval_runner,
+            ) = build_stub_runners()
+        elif mode == "adk":
+            self.pipeline_runner = pipeline_runner
+            self.risk_runner = risk_runner
+            self.approval_runner = approval_runner
+        else:
+            raise ValueError("LLM_MODE must be either 'stub' or 'adk'.")
+        self.llm_mode = mode
         self.processing_metrics: dict[str, float | int] = {
             "total_applications": 0,
             "approved": 0,

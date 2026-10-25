@@ -168,7 +168,7 @@ async def test_pipeline_returns_typed_decision_and_writes_audit(monkeypatch, tmp
         return output, 0.01, {"input_tokens": 3, "output_tokens": 2}
 
     monkeypatch.setattr(orchestration, "_run_agent", fake_run_agent)
-    result = await LoanProcessingOrchestrator().process_loan_application(
+    result = await LoanProcessingOrchestrator(llm_mode="adk").process_loan_application(
         "Synthetic application data."
     )
 
@@ -192,7 +192,7 @@ async def test_schema_failure_routes_to_human_review(monkeypatch, tmp_path):
         raise AgentContractError("DocumentProcessingPipeline", 2, "invalid output")
 
     monkeypatch.setattr(orchestration, "_run_agent", fail_first_agent)
-    result = await LoanProcessingOrchestrator().process_loan_application(
+    result = await LoanProcessingOrchestrator(llm_mode="adk").process_loan_application(
         "Synthetic application data."
     )
 

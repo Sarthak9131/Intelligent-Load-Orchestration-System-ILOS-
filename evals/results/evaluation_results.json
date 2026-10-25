@@ -1,0 +1,802 @@
+{
+  "average_latency_seconds_by_phase": {
+    "approval_workflow": 0.00010885000015453746,
+    "document_processing": 0.00018149999843444675,
+    "risk_assessment": 0.00010451533365994692
+  },
+  "average_total_latency_seconds": 0.0006220740008090312,
+  "case_predictions": [
+    {
+      "case_id": "SYN-001",
+      "expected": "reject",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_dti"
+      ]
+    },
+    {
+      "case_id": "SYN-002",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "case_id": "SYN-003",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "conflicting_data"
+      ]
+    },
+    {
+      "case_id": "SYN-004",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "case_id": "SYN-005",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "self_employed_income"
+      ]
+    },
+    {
+      "case_id": "SYN-006",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "case_id": "SYN-007",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "case_id": "SYN-008",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "case_id": "SYN-009",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "case_id": "SYN-010",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "case_id": "SYN-011",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "case_id": "SYN-012",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "case_id": "SYN-013",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "case_id": "SYN-014",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "case_id": "SYN-015",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "case_id": "SYN-016",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit",
+        "credit_threshold_edge"
+      ]
+    },
+    {
+      "case_id": "SYN-017",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "missing_fields",
+        "borderline_credit"
+      ]
+    },
+    {
+      "case_id": "SYN-018",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit"
+      ]
+    },
+    {
+      "case_id": "SYN-019",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "conflicting_data",
+        "borderline_credit"
+      ]
+    },
+    {
+      "case_id": "SYN-020",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit",
+        "credit_threshold_edge"
+      ]
+    },
+    {
+      "case_id": "SYN-021",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit"
+      ]
+    },
+    {
+      "case_id": "SYN-022",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit"
+      ]
+    },
+    {
+      "case_id": "SYN-023",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit",
+        "self_employed_income"
+      ]
+    },
+    {
+      "case_id": "SYN-024",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit",
+        "self_employed_income"
+      ]
+    },
+    {
+      "case_id": "SYN-025",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "missing_fields"
+      ]
+    },
+    {
+      "case_id": "SYN-026",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit"
+      ]
+    },
+    {
+      "case_id": "SYN-027",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit"
+      ]
+    },
+    {
+      "case_id": "SYN-028",
+      "expected": "approve",
+      "predicted": "approve",
+      "predictions": [
+        "approve",
+        "approve",
+        "approve"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit",
+        "credit_threshold_edge"
+      ]
+    },
+    {
+      "case_id": "SYN-029",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit"
+      ]
+    },
+    {
+      "case_id": "SYN-030",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "case_id": "SYN-031",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit"
+      ]
+    },
+    {
+      "case_id": "SYN-032",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "conflicting_data",
+        "borderline_credit"
+      ]
+    },
+    {
+      "case_id": "SYN-033",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit"
+      ]
+    },
+    {
+      "case_id": "SYN-034",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit"
+      ]
+    },
+    {
+      "case_id": "SYN-035",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "case_id": "SYN-036",
+      "expected": "reject",
+      "predicted": "reject",
+      "predictions": [
+        "reject",
+        "reject",
+        "reject"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit",
+        "high_risk",
+        "credit_threshold_edge"
+      ]
+    },
+    {
+      "case_id": "SYN-037",
+      "expected": "reject",
+      "predicted": "reject",
+      "predictions": [
+        "reject",
+        "reject",
+        "reject"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-038",
+      "expected": "reject",
+      "predicted": "reject",
+      "predictions": [
+        "reject",
+        "reject",
+        "reject"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-039",
+      "expected": "reject",
+      "predicted": "reject",
+      "predictions": [
+        "reject",
+        "reject",
+        "reject"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "self_employed_income",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-040",
+      "expected": "reject",
+      "predicted": "reject",
+      "predictions": [
+        "reject",
+        "reject",
+        "reject"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-041",
+      "expected": "reject",
+      "predicted": "reject",
+      "predictions": [
+        "reject",
+        "reject",
+        "reject"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-042",
+      "expected": "reject",
+      "predicted": "reject",
+      "predictions": [
+        "reject",
+        "reject",
+        "reject"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-043",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "missing_fields",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-044",
+      "expected": "reject",
+      "predicted": "reject",
+      "predictions": [
+        "reject",
+        "reject",
+        "reject"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-045",
+      "expected": "reject",
+      "predicted": "reject",
+      "predictions": [
+        "reject",
+        "reject",
+        "reject"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-046",
+      "expected": "reject",
+      "predicted": "reject",
+      "predictions": [
+        "reject",
+        "reject",
+        "reject"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-047",
+      "expected": "conditional",
+      "predicted": "conditional",
+      "predictions": [
+        "conditional",
+        "conditional",
+        "conditional"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "conflicting_data",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-048",
+      "expected": "reject",
+      "predicted": "reject",
+      "predictions": [
+        "reject",
+        "reject",
+        "reject"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "self_employed_income",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-049",
+      "expected": "reject",
+      "predicted": "reject",
+      "predictions": [
+        "reject",
+        "reject",
+        "reject"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-050",
+      "expected": "reject",
+      "predicted": "reject",
+      "predictions": [
+        "reject",
+        "reject",
+        "reject"
+      ],
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    }
+  ],
+  "dataset": "C:\\Users\\JAGGA\\Desktop\\ADK Demo\\Multi-Agent-Loan-Processing-System\\evals\\data\\synthetic_loan_applications.jsonl",
+  "dataset_size": 50,
+  "human_review_decisions": 21,
+  "label_definition": "Expected outcomes are generated from the rule in generate_dataset.py. They are synthetic labels, not historical loan outcomes.",
+  "limitations": [
+    "Synthetic cases and labels do not establish real-world model quality.",
+    "The stub uses deterministic demonstration rules rather than an LLM.",
+    "Repeated deterministic stub runs measure code-path consistency only.",
+    "Token counts in stub mode are rough character-based estimates.",
+    "The label policy and stub policy share broad criteria; scores are not independent evidence of model validity."
+  ],
+  "llm_mode": "stub",
+  "metrics": {
+    "accuracy": 0.98,
+    "class_order": [
+      "approve",
+      "conditional",
+      "reject"
+    ],
+    "confusion_matrix": {
+      "approve": {
+        "approve": 15,
+        "conditional": 0,
+        "reject": 0
+      },
+      "conditional": {
+        "approve": 0,
+        "conditional": 21,
+        "reject": 0
+      },
+      "reject": {
+        "approve": 0,
+        "conditional": 1,
+        "reject": 13
+      }
+    },
+    "per_class": {
+      "approve": {
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 15
+      },
+      "conditional": {
+        "f1": 0.9767441860465117,
+        "precision": 0.9545454545454546,
+        "recall": 1.0,
+        "support": 21
+      },
+      "reject": {
+        "f1": 0.962962962962963,
+        "precision": 1.0,
+        "recall": 0.9285714285714286,
+        "support": 14
+      }
+    }
+  },
+  "misclassified_applications": [
+    {
+      "case_id": "SYN-001",
+      "conflicting_fields": [],
+      "expected": "reject",
+      "likely_reasons": [
+        "The stub and synthetic reference label use different debt-to-income cutoffs."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "borderline_dti"
+      ]
+    }
+  ],
+  "model": "anthropic/claude-sonnet-4-6",
+  "repeat_consistency": {
+    "all_repeats_identical_rate": 1.0,
+    "mean_pairwise_decision_agreement": 1.0
+  },
+  "repeats_per_application": 3,
+  "review_mapping": "NEEDS_HUMAN_REVIEW is mapped to conditional for the three-class classification metrics; the separate review count is reported.",
+  "schema_version": 1,
+  "token_cost_estimate_usd": 0.576567,
+  "token_cost_pricing": {
+    "input_cost_per_million_tokens_usd": 3.0,
+    "output_cost_per_million_tokens_usd": 15.0,
+    "source": "LiteLLM runtime model-cost metadata"
+  },
+  "token_usage": {
+    "input_tokens": 67539,
+    "output_tokens": 24930,
+    "source": "Character-based estimates in stub mode; provider usage metadata in ADK mode when available."
+  }
+}

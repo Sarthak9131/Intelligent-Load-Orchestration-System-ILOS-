@@ -9,6 +9,7 @@ load_dotenv()
 
 # ── LLM ───────────────────────────────────────────────────────────────────────
 LLM_MODEL = os.getenv("LLM_MODEL", "anthropic/claude-sonnet-4-6")
+LLM_MODE = os.getenv("LLM_MODE", "stub").lower()
 MAX_AGENT_ATTEMPTS = 2
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
