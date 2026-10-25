@@ -1,6 +1,6 @@
 # 🏦 Loan Processing Multi-Agent System
 
-> **Enterprise-grade loan processing automation using Google ADK — Sequential Pipelines · Parallel Teams · Authority Handoffs**
+> **A synthetic loan-processing prototype using Google ADK — sequential pipelines, parallel checks, and a sequential review chain**
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
 [![Google ADK](https://img.shields.io/badge/Google%20ADK-0.4+-green.svg)](https://google.github.io/adk-docs/)
@@ -77,16 +77,20 @@ risk_assessment_team = ParallelAgent(
 
 **Why parallel?**  
 Income, credit, employment, and collateral analyses don't depend on each other.  
-Running them simultaneously cuts processing time by **4×**.
+They can run concurrently; actual end-to-end latency depends on provider response
+times, orchestration overhead, and failures. This repository does not claim a
+measured speedup.
 
-### 3. Authority Handoffs (Phase 3)
-Used for **decision chains** where each level builds on the previous.
+### 3. Sequential Decision Chain (Phase 3)
+The approval workflow is a **sequential decision chain** where each level runs
+after and can use the prior review's output. It is not a separate authority
+handoff protocol.
 
 ```
 RiskAnalyst → ComplianceReviewer → FinalUnderwriter
 ```
 
-Each agent receives the full context of all previous decisions, ensuring complete audit trail.
+Risk analyst → compliance reviewer → final underwriter.
 
 ---
 
@@ -155,9 +159,8 @@ Copy `.env.example` to `.env` and set your API key:
 ANTHROPIC_API_KEY=sk-ant-...
 LLM_MODEL=anthropic/claude-sonnet-4-6
 
-# For OpenAI
-# OPENAI_API_KEY=sk-...
-# LLM_MODEL=openai/gpt-4o
+# LiteLLM provider/model identifier; the configured default is:
+LLM_MODEL=anthropic/claude-sonnet-4-6
 ```
 
 ---
@@ -191,23 +194,6 @@ pytest tests/ --cov=src --cov-report=html
 ```
 
 ---
-
-## Performance Metrics
-
-| Metric | Traditional Manual | This System |
-|--------|-------------------|-------------|
-| Decision time | 48+ hours | ~3 seconds |
-| Throughput | ~50 apps/day | 35,000+ apps/day |
-| Error rate | ~12% | ~1.2% |
-| Compliance adherence | 94% | 99.5%+ |
-| Cost per application | $125 | $45 |
-
-**Speed gain from parallel processing:**
-
-```
-Sequential risk assessment:  4 × 200ms = 800ms
-Parallel risk assessment:    1 × 200ms = 200ms  ← 4× faster
-```
 
 ---
 

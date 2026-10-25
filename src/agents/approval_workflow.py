@@ -3,18 +3,26 @@ Approval Workflow — Sequential Authority Chain
 Risk Analyst → Compliance Reviewer → Final Underwriter
 """
 
-import os
 from google.adk.agents import Agent, SequentialAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.models.lite_llm import LiteLlm
 
-MODEL = LiteLlm(model=os.getenv("LLM_MODEL", "anthropic/claude-sonnet-4-6"))
+from ..agent_observability import after_agent, after_model, before_agent, on_model_error
+from config.settings import LLM_MODEL
+from ..schemas import ComplianceReviewOutput, FinalDecisionOutput, RiskReviewOutput
+
+MODEL = LiteLlm(model=LLM_MODEL)
 
 # ── Agent 1: Risk Analyst ──────────────────────────────────────────────────────
 risk_analyst_agent = Agent(
     name="RiskAnalystAgent",
     model=MODEL,
+    output_schema=RiskReviewOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""You are a senior risk analyst for loan approvals.
 
 Your role:
@@ -35,19 +43,22 @@ Risk-based pricing adjustment:
   MEDIUM → Base rate + 1.0%
   HIGH   → Base rate + 2.5% (if conditionally approved)
 
-Output:
-RISK ANALYST DECISION:
-  Preliminary Recommendation: APPROVE / CONDITIONAL / REJECT
-  Suggested Interest Rate Adjustment:
-  Conditions (if any):
-  Reasoning:
-  Additional Information Needed (if any):""",
+Return the fields recommendation (approve/conditional/reject/
+needs_human_review), confidence (0-1), conditions, and reasoning.
+
+Return only a JSON object matching the configured output schema. Set confidence
+between zero and one and abstain when material evidence is missing.""",
 )
 
 # ── Agent 2: Compliance Reviewer ──────────────────────────────────────────────
 compliance_reviewer_agent = Agent(
     name="ComplianceReviewerAgent",
     model=MODEL,
+    output_schema=ComplianceReviewOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""You are a compliance and regulatory specialist for a lending institution.
 
 Your role:
@@ -61,23 +72,22 @@ Your role:
 - Validate audit trail completeness
 - Flag any compliance issues that must be resolved before approval
 
-Output:
-COMPLIANCE REVIEW:
-  ECOA Check:         PASS / FAIL
-  FCRA Check:         PASS / FAIL
-  TILA Requirements:  PASS / FAIL (required disclosures noted)
-  BSA/AML Check:      PASS / FAIL
-  Policy Limits:      PASS / FAIL
-  Audit Trail:        COMPLETE / INCOMPLETE
-  COMPLIANCE STATUS:  APPROVED / CONDITIONAL / BLOCKED
-  Issues to Resolve (if any):
-  Required Disclosures:""",
+Return the fields passed (boolean), issues, and required_disclosures. Set
+passed to false when a required compliance check cannot be verified.
+
+Return only a JSON object matching the configured output schema. Do not claim
+that a legal review was completed; flag issues requiring an accountable reviewer.""",
 )
 
 # ── Agent 3: Final Underwriter ────────────────────────────────────────────────
 final_underwriter_agent = Agent(
     name="FinalUnderwriterAgent",
     model=MODEL,
+    output_schema=FinalDecisionOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""You are the final underwriting authority for loan approvals.
 
 Your role:
@@ -91,31 +101,13 @@ Monthly payment formula (approximate):
   M = P * [r(1+r)^n] / [(1+r)^n - 1]
   where P = principal, r = monthly rate, n = months
 
-Output:
-═══════════════════════════════════════════
-FINAL UNDERWRITING DECISION
-Application ID: [from context]
-Date: [today]
-═══════════════════════════════════════════
-DECISION: APPROVED / CONDITIONALLY APPROVED / REJECTED
+Return the fields decision (approve/conditional/reject/needs_human_review),
+confidence (0-1), reason_codes (one or more objects with code, rank, and
+description), explanation, conditions, and human_review_reason.
 
-LOAN TERMS (if approved):
-  Principal Amount:   $X,XXX
-  Annual Percentage Rate (APR): X.XX%
-  Term:               XX months
-  Estimated Monthly Payment: $X,XXX.XX
-  Conditions:         [none / list]
-
-REASONING:
-  [concise explanation referencing risk score and compliance]
-
-NEXT STEPS:
-  1.
-  2.
-  3.
-
-Underwriter Authority: Final Decision
-═══════════════════════════════════════════""",
+Return only a JSON object matching the configured output schema. Include at
+least one ranked reason code, a plain-language explanation, and an explicit
+human-review reason when abstaining. Never invent rates or terms.""",
 )
 
 # ── Sequential Approval Workflow ──────────────────────────────────────────────

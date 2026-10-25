@@ -3,18 +3,32 @@ Document Processing Sequential Pipeline
 Intake → Data Extraction → Validation
 """
 
-import os
 from google.adk.agents import Agent, SequentialAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.models.lite_llm import LiteLlm
 
-MODEL = LiteLlm(model=os.getenv("LLM_MODEL", "anthropic/claude-sonnet-4-6"))
+from ..agent_observability import after_agent, after_model, before_agent, on_model_error
+from config.settings import LLM_MODEL
+from ..schemas import (
+    DataExtractionOutput,
+    DocumentIntakeInput,
+    DocumentIntakeOutput,
+    ValidationOutput,
+)
+
+MODEL = LiteLlm(model=LLM_MODEL)
 
 # ── Agent 1: Document Intake ───────────────────────────────────────────────────
 document_intake_agent = Agent(
     name="DocumentIntakeAgent",
     model=MODEL,
+    input_schema=DocumentIntakeInput,
+    output_schema=DocumentIntakeOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""You are a document intake specialist for loan applications.
 
 Your role:
@@ -25,19 +39,26 @@ Your role:
 - Create an initial document inventory with clearly labelled sections
 - Flag any obviously missing or corrupted documents
 
-Output format:
-DOCUMENT INVENTORY:
-- List every document type identified
-- Note completeness for each section
-- Highlight any gaps or red flags
+Return the following fields:
+- documents: every document type identified
+- missing_fields: known gaps
+- data_quality_issues: inconsistent or incomplete information
+- completeness_score: number from 0 to 100
 
-Be thorough and systematic. Your output feeds directly into the data extraction step.""",
+Be thorough and systematic. Your output feeds directly into the data extraction step.
+Return only a JSON object matching the configured output schema. Do not include
+markdown fences or infer information that is not present.""",
 )
 
 # ── Agent 2: Data Extraction ───────────────────────────────────────────────────
 data_extraction_agent = Agent(
     name="DataExtractionAgent",
     model=MODEL,
+    output_schema=DataExtractionOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""You are a financial data extraction specialist for loan processing.
 
 Your role:
@@ -50,32 +71,25 @@ Your role:
 - Cross-reference data across multiple documents for consistency
 - Flag any discrepancies or unusual patterns
 
-Output format:
-EXTRACTED DATA:
-  Applicant Name:
-  Annual Income:
-  Monthly Income:
-  Total Monthly Debts:
-  DTI Ratio:
-  Credit Score:
-  Loan Amount Requested:
-  Loan Purpose:
-  Employment Years:
-  Liquid Assets/Savings:
+Return the fields applicant_name, annual_income, monthly_income,
+monthly_debts, debt_to_income_ratio, credit_score, loan_amount,
+loan_to_income_ratio, employment_type, employment_years, savings,
+loan_purpose, and evidence_notes. Ratios must be decimals, not percentages.
+Use null when a field is unavailable.
 
-CALCULATED RATIOS:
-  DTI: X.X%
-  LTI: X.X
-  (LTV if applicable)
-
-DATA QUALITY FLAGS:
-  - Any inconsistencies noted""",
+Return only a JSON object matching the configured output schema. Use null for
+unknown values and do not infer missing facts.""",
 )
 
 # ── Agent 3: Validation ────────────────────────────────────────────────────────
 validation_agent = Agent(
     name="ValidationAgent",
     model=MODEL,
+    output_schema=ValidationOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""You are a loan application validation specialist.
 
 Your role:
@@ -85,16 +99,12 @@ Your role:
 - Identify missing required documents or information
 - Assign a validation score (0-100) based on data completeness and quality
 
-Output format:
-VALIDATION REPORT:
-  Completeness Score: X/100
-  Consistency Check: PASS / FAIL (explain failures)
-  Calculation Verification: PASS / FAIL
-  Missing Documents: [list]
-  Data Quality Issues: [list]
-  OVERALL STATUS: VALID / INCOMPLETE / INCONSISTENT
+Return the fields is_valid, completeness_score, missing_fields,
+inconsistencies, and requires_human_review. Set requires_human_review when
+material fields are missing or conflicting.
 
-Only mark VALID if completeness ≥ 80 and no critical inconsistencies.""",
+Only mark VALID if completeness ≥ 80 and no critical inconsistencies. Return
+only a JSON object matching the configured output schema.""",
 )
 
 # ── Sequential Pipeline ────────────────────────────────────────────────────────

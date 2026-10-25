@@ -4,7 +4,7 @@ Data models for the Loan Processing Multi-Agent System.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 
 class ApplicationStatus(Enum):
@@ -15,6 +15,7 @@ class ApplicationStatus(Enum):
     CONDITIONALLY_APPROVED = "conditionally_approved"
     REJECTED = "rejected"
     REQUIRES_INFO = "requires_additional_info"
+    NEEDS_HUMAN_REVIEW = "needs_human_review"
 
 
 class RiskLevel(Enum):
@@ -36,6 +37,7 @@ class LoanApplication:
     loan_purpose: str
     application_id: Optional[str] = None
     documentation_complete: bool = True
+    employment_type: str = "unknown"
 
     @property
     def debt_to_income(self) -> float:
@@ -70,6 +72,12 @@ class ProcessingResult:
     compliance_notes: str = ""
     loan_terms: Optional[dict] = None
     next_steps: List[str] = field(default_factory=list)
+    reason_codes: List[dict] = field(default_factory=list)
+    explanation: str = ""
+    confidence: Optional[float] = None
+    human_review_reason: Optional[str] = None
+    phase_latencies: Dict[str, float] = field(default_factory=dict)
+    token_usage: Dict[str, int] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -86,4 +94,10 @@ class ProcessingResult:
             else self.compliance_notes,
             "loan_terms": self.loan_terms,
             "next_steps": self.next_steps,
+            "reason_codes": self.reason_codes,
+            "explanation": self.explanation,
+            "confidence": self.confidence,
+            "human_review_reason": self.human_review_reason,
+            "phase_latencies_seconds": self.phase_latencies,
+            "token_usage": self.token_usage,
         }

@@ -3,18 +3,32 @@ Parallel Risk Assessment Team
 Income · Credit · Employment · Collateral — all running simultaneously.
 """
 
-import os
-from google.adk.agents import Agent, ParallelAgent
+from google.adk.agents import Agent, ParallelAgent, SequentialAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.models.lite_llm import LiteLlm
 
-MODEL = LiteLlm(model=os.getenv("LLM_MODEL", "anthropic/claude-sonnet-4-6"))
+from ..agent_observability import after_agent, after_model, before_agent, on_model_error
+from config.settings import LLM_MODEL
+from ..schemas import (
+    CollateralEvaluationOutput,
+    CreditAssessmentOutput,
+    EmploymentRiskOutput,
+    IncomeAnalysisOutput,
+    RiskAggregationOutput,
+)
+
+MODEL = LiteLlm(model=LLM_MODEL)
 
 # ── Agent 1: Income Analysis ───────────────────────────────────────────────────
 income_analysis_agent = Agent(
     name="IncomeAnalysisAgent",
     model=MODEL,
+    output_schema=IncomeAnalysisOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""You are an income verification and stability specialist.
 
 Your expertise:
@@ -30,21 +44,22 @@ Risk scoring guide (income component, 0-100, lower = better):
   51-75  → HIGH risk    (self-employed volatility, declining income)
   76-100 → CRITICAL     (unverifiable, severely insufficient)
 
-Output:
-INCOME ANALYSIS:
-  Income Sources:
-  Stability Assessment:
-  Documentation Quality:
-  Lending Capacity:
-  Risk Factors:
-  INCOME RISK SCORE: X/100
-  INCOME RISK LEVEL: LOW / MEDIUM / HIGH / CRITICAL""",
+Return the fields risk_score (0-100), risk_band (low/medium/high/critical),
+stability_assessment, documentation_quality, and risk_factors.
+
+Return only a JSON object matching the configured output schema. Do not invent
+income sources or documentation that are not present.""",
 )
 
 # ── Agent 2: Credit Assessment ─────────────────────────────────────────────────
 credit_assessment_agent = Agent(
     name="CreditAssessmentAgent",
     model=MODEL,
+    output_schema=CreditAssessmentOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""You are a credit risk analysis specialist.
 
 Your expertise:
@@ -61,21 +76,22 @@ Credit score benchmarks:
   600-649 → Poor    (HIGH risk)
   < 600   → Very poor (CRITICAL risk)
 
-Output:
-CREDIT ASSESSMENT:
-  Credit Score:
-  Payment History:
-  Credit Utilisation:
-  Delinquency History:
-  Prediction:
-  CREDIT RISK SCORE: X/100
-  CREDIT RISK LEVEL: LOW / MEDIUM / HIGH / CRITICAL""",
+Return the fields credit_score, risk_score (0-100), risk_band
+(low/medium/high/critical), assessment, and risk_factors.
+
+Return only a JSON object matching the configured output schema. Do not infer
+payment history or utilization when it was not supplied.""",
 )
 
 # ── Agent 3: Employment Risk ───────────────────────────────────────────────────
 employment_risk_agent = Agent(
     name="EmploymentRiskAgent",
     model=MODEL,
+    output_schema=EmploymentRiskOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""You are an employment stability and risk specialist.
 
 Your expertise:
@@ -85,21 +101,22 @@ Your expertise:
 - Review employment documentation
 - Predict employment continuity
 
-Output:
-EMPLOYMENT ANALYSIS:
-  Current Role & Tenure:
-  Employment Type: (permanent / contract / self-employed)
-  Industry Stability:
-  Career Progression:
-  Risk Factors:
-  EMPLOYMENT RISK SCORE: X/100
-  EMPLOYMENT RISK LEVEL: LOW / MEDIUM / HIGH / CRITICAL""",
+Return the fields risk_score (0-100), risk_band (low/medium/high/critical),
+assessment, and risk_factors.
+
+Return only a JSON object matching the configured output schema. Avoid treating
+self-employment as inherently adverse; assess stability and evidence.""",
 )
 
 # ── Agent 4: Collateral Evaluation ────────────────────────────────────────────
 collateral_evaluation_agent = Agent(
     name="CollateralEvaluationAgent",
     model=MODEL,
+    output_schema=CollateralEvaluationOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""You are a collateral valuation and risk specialist.
 
 Your expertise:
@@ -114,21 +131,22 @@ Liquid asset coverage:
   10-24%               → HIGH risk
   < 10%                → CRITICAL
 
-Output:
-COLLATERAL ASSESSMENT:
-  Assets Identified:
-  Liquid Asset Coverage:
-  Asset Quality:
-  LTV Ratio (if applicable):
-  Risk Factors:
-  COLLATERAL RISK SCORE: X/100
-  COLLATERAL RISK LEVEL: LOW / MEDIUM / HIGH / CRITICAL""",
+Return the fields risk_score (0-100), risk_band (low/medium/high/critical),
+coverage_ratio, assessment, and risk_factors.
+
+Return only a JSON object matching the configured output schema. Do not assume
+unreported collateral exists.""",
 )
 
 # ── Risk Aggregator (sequential, runs after parallel team) ────────────────────
 risk_aggregator_agent = Agent(
     name="RiskAggregatorAgent",
     model=MODEL,
+    output_schema=RiskAggregationOutput,
+    before_agent_callback=before_agent,
+    after_agent_callback=after_agent,
+    after_model_callback=after_model,
+    on_model_error_callback=on_model_error,
     instruction="""You are a senior risk aggregation specialist.
 
 Combine the four individual risk assessments into a single consolidated report.
@@ -148,17 +166,11 @@ Overall risk level:
   61-80  → HIGH
   81-100 → CRITICAL
 
-Output:
-CONSOLIDATED RISK REPORT:
-  Income Risk Score:     X/100
-  Credit Risk Score:     X/100
-  Employment Risk Score: X/100
-  Collateral Risk Score: X/100
-  WEIGHTED OVERALL SCORE: X/100
-  OVERALL RISK LEVEL: LOW / MEDIUM / HIGH / CRITICAL
-  Key Risk Factors:
-  Mitigating Factors:
-  Preliminary Recommendation: APPROVE / CONDITIONAL / REJECT""",
+Return risk_score, risk_band (low/medium/high/critical), and risk_factors.
+
+Return only a JSON object matching the configured output schema. Compute the
+weighted score from the specialist outputs; do not replace missing scores with
+zero.""",
 )
 
 # ── Parallel Team (4 agents simultaneously) ───────────────────────────────────
@@ -172,10 +184,17 @@ risk_assessment_team = ParallelAgent(
     ],
 )
 
+# The independent specialist checks fan out in parallel, then their typed
+# findings are consolidated in a dependent sequential step.
+risk_workflow = SequentialAgent(
+    name="RiskAssessmentWorkflow",
+    sub_agents=[risk_assessment_team, risk_aggregator_agent],
+)
+
 # ── Runner ─────────────────────────────────────────────────────────────────────
 _session_service = InMemorySessionService()
 risk_runner = Runner(
-    agent=risk_assessment_team,
-    app_name="RiskAssessmentTeam",
+    agent=risk_workflow,
+    app_name="RiskAssessmentWorkflow",
     session_service=_session_service,
 )

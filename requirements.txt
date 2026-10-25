@@ -2,6 +2,7 @@
 google-adk>=0.4.0
 google-genai>=0.4.0
 litellm>=1.40.0
+pydantic>=2.7.0
 
 # LLM providers (uncomment the one you use)
 anthropic>=0.25.0

@@ -1,163 +1,364 @@
-"""
-Loan Processing Orchestrator
-Master coordinator for the complete multi-agent loan processing workflow.
-"""
+"""Orchestration and reliability boundaries for loan-processing agents.""" 
 
 import asyncio
-import uuid
-import time
+import hashlib
+import json
 import logging
-from datetime import datetime
-from typing import Dict, Any
+import os
+import time
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, TypeVar
 
-from .agents.document_pipeline import document_processing_pipeline, pipeline_runner
-from .agents.risk_team import risk_assessment_team, risk_runner
-from .agents.approval_workflow import approval_workflow, approval_runner
-from .models import ProcessingResult, ApplicationStatus
+from pydantic import BaseModel, ValidationError
+
+from config.settings import AUDIT_DIR, MAX_AGENT_ATTEMPTS
+from .agents.approval_workflow import approval_runner
+from .agents.document_pipeline import pipeline_runner
+from .agents.risk_team import risk_runner
+from .models import ApplicationStatus, ProcessingResult
+from .schemas import (
+    DecisionLabel,
+    DocumentIntakeInput,
+    FinalDecisionOutput,
+    RiskAggregationOutput,
+    ValidationOutput,
+)
 
 logger = logging.getLogger(__name__)
+SchemaT = TypeVar("SchemaT", bound=BaseModel)
+
+
+class AgentContractError(RuntimeError):
+    """Raised after an agent fails to return output matching its contract."""
+
+    def __init__(
+        self,
+        agent_name: str,
+        attempts: int,
+        error: str,
+        latency: float = 0.0,
+        token_usage: dict[str, int] | None = None,
+    ):
+        super().__init__(error)
+        self.agent_name = agent_name
+        self.attempts = attempts
+        self.latency = latency
+        self.token_usage = token_usage or {}
+
+
+class ApplicationAuditTrail:
+    """Collect structured events and persist one JSON audit record per application."""
+
+    def __init__(self, application_id: str):
+        self.application_id = application_id
+        self.events: list[dict[str, Any]] = []
+
+    def record(self, event: dict[str, Any]) -> None:
+        """Append an event and emit it as a structured JSON log line."""
+        record = {"application_id": self.application_id, **event}
+        self.events.append(record)
+        logger.info("%s", json.dumps(record, sort_keys=True, default=str))
+
+    def save(self) -> Path:
+        """Persist the application audit as JSON."""
+        audit_dir = Path(os.getenv("AUDIT_DIR", AUDIT_DIR))
+        audit_dir.mkdir(parents=True, exist_ok=True)
+        destination = audit_dir / f"{self.application_id}.json"
+        temporary = destination.with_suffix(".json.tmp")
+        if destination.exists():
+            payload = json.loads(destination.read_text(encoding="utf-8"))
+            payload["events"].extend(self.events)
+        else:
+            payload = {
+                "application_id": self.application_id,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "events": self.events,
+            }
+        temporary.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+        temporary.replace(destination)
+        return destination
 
 
 class LoanProcessingOrchestrator:
-    """Master orchestrator for complete loan processing workflow."""
+    """Run document, risk, and sequential approval phases with typed boundaries."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.pipeline_runner = pipeline_runner
         self.risk_runner = risk_runner
         self.approval_runner = approval_runner
-        self.processing_metrics = {
+        self.processing_metrics: dict[str, float | int] = {
             "total_applications": 0,
             "approved": 0,
             "rejected": 0,
             "conditional": 0,
+            "needs_human_review": 0,
             "average_processing_time": 0.0,
-            "compliance_score": 0.0,
         }
 
     async def process_loan_application(self, application_data: str) -> ProcessingResult:
-        """Run end-to-end loan processing through all agent phases."""
-        start_time = time.time()
-        application_id = f"LA-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
-        logger.info(f"[{application_id}] Starting loan processing pipeline")
+        """Run every workflow phase; validation failures explicitly require review."""
+        start_time = time.perf_counter()
+        application_id = (
+            f"LA-{datetime.now(timezone.utc).strftime('%Y%m%d')}-"
+            f"{uuid.uuid4().hex[:6].upper()}"
+        )
+        audit = ApplicationAuditTrail(application_id)
+        phase_latencies: dict[str, float] = {}
+        token_usage: dict[str, int] = {}
+        input_hash = hashlib.sha256(application_data.encode("utf-8")).hexdigest()
 
         try:
-            # ── Phase 1: Document Processing (Sequential) ──────────────────
-            logger.info(f"[{application_id}] Phase 1: Document processing pipeline")
-            doc_session_id = f"doc-{application_id}"
-            doc_content = await _run_agent(
+            intake_input = DocumentIntakeInput(
+                application_text=application_data,
+                application_id=application_id,
+            )
+            document_result, latency, tokens = await _run_agent(
                 self.pipeline_runner,
-                doc_session_id,
-                application_data,
+                f"doc-{application_id}",
+                intake_input.model_dump_json(),
                 application_id,
+                "DocumentProcessingPipeline",
+                ValidationOutput,
+                audit,
+                input_hash,
             )
+            phase_latencies["document_processing"] = latency
+            _add_tokens(token_usage, tokens)
 
-            # ── Phase 2: Parallel Risk Assessment ──────────────────────────
-            logger.info(f"[{application_id}] Phase 2: Parallel risk assessment")
-            risk_session_id = f"risk-{application_id}"
-            risk_content = await _run_agent(
+            risk_result, latency, tokens = await _run_agent(
                 self.risk_runner,
-                risk_session_id,
-                f"APPLICATION DATA:\n{application_data}\n\nDOCUMENT PROCESSING RESULTS:\n{doc_content}",
-                application_id,
-            )
-
-            # ── Phase 3: Approval Workflow (Sequential) ─────────────────────
-            logger.info(f"[{application_id}] Phase 3: Approval workflow")
-            approval_session_id = f"approval-{application_id}"
-            approval_content = await _run_agent(
-                self.approval_runner,
-                approval_session_id,
-                (
-                    f"APPLICATION DATA:\n{application_data}\n\n"
-                    f"DOCUMENT PROCESSING:\n{doc_content}\n\n"
-                    f"RISK ASSESSMENT:\n{risk_content}"
+                f"risk-{application_id}",
+                json.dumps(
+                    {
+                        "application_id": application_id,
+                        "application_text": application_data,
+                        "document_validation": document_result.model_dump(mode="json"),
+                    }
                 ),
                 application_id,
+                "RiskAssessmentWorkflow",
+                RiskAggregationOutput,
+                audit,
+                input_hash,
             )
+            phase_latencies["risk_assessment"] = latency
+            _add_tokens(token_usage, tokens)
 
-            # ── Phase 4: Build final result ─────────────────────────────────
-            processing_time = time.time() - start_time
-            status = _parse_status(approval_content)
+            approval_result, latency, tokens = await _run_agent(
+                self.approval_runner,
+                f"approval-{application_id}",
+                json.dumps(
+                    {
+                        "application_id": application_id,
+                        "application_text": application_data,
+                        "document_validation": document_result.model_dump(mode="json"),
+                        "risk_assessment": risk_result.model_dump(mode="json"),
+                    }
+                ),
+                application_id,
+                "ApprovalWorkflow",
+                FinalDecisionOutput,
+                audit,
+                input_hash,
+            )
+            phase_latencies["approval_workflow"] = latency
+            _add_tokens(token_usage, tokens)
+
+            if document_result.requires_human_review:
+                approval_result = _review_decision(
+                    approval_result,
+                    "Document validation identified missing or inconsistent information.",
+                )
+            elif risk_result.risk_band.value == "high" and approval_result.confidence < 0.7:
+                approval_result = _review_decision(
+                    approval_result,
+                    "Low decision confidence on a high-risk application.",
+                )
 
             result = ProcessingResult(
                 application_id=application_id,
-                status=status,
-                decision=approval_content,
-                processing_time=processing_time,
-                risk_assessment=risk_content,
-                compliance_notes=approval_content,
-                timestamp=datetime.now().isoformat(),
+                status=_status_for_decision(approval_result.decision.value),
+                decision=approval_result.explanation,
+                processing_time=time.perf_counter() - start_time,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                risk_assessment=risk_result.model_dump_json(),
+                compliance_notes="Compliance status must be verified by an accountable reviewer.",
+                reason_codes=[reason.model_dump(mode="json") for reason in approval_result.reason_codes],
+                explanation=approval_result.explanation,
+                confidence=approval_result.confidence,
+                human_review_reason=approval_result.human_review_reason,
+                phase_latencies=phase_latencies,
+                token_usage=token_usage,
             )
-
+            audit.record(
+                {
+                    "agent_name": "LoanProcessingOrchestrator",
+                    "input_hash": input_hash,
+                    "output": result.to_dict(),
+                    "errors": [],
+                }
+            )
             self._update_metrics(result)
-            logger.info(
-                f"[{application_id}] Completed in {processing_time:.2f}s — {status.value}"
-            )
             return result
-
-        except Exception as exc:
-            processing_time = time.time() - start_time
-            logger.error(f"[{application_id}] Processing error: {exc}", exc_info=True)
-            return ProcessingResult(
-                application_id=application_id,
-                status=ApplicationStatus.REQUIRES_INFO,
-                decision=f"Processing error: {exc}. Please contact a loan officer for manual review.",
-                processing_time=processing_time,
-                timestamp=datetime.now().isoformat(),
+        except AgentContractError as exc:
+            reason = (
+                f"{exc.agent_name} output failed schema validation after "
+                f"{exc.attempts} attempts: {exc}"
             )
+            audit.record(
+                {
+                    "agent_name": exc.agent_name,
+                    "latency_ms": round(exc.latency * 1000, 3),
+                    "token_usage": exc.token_usage,
+                    "input_hash": input_hash,
+                    "output": None,
+                    "errors": [reason],
+                }
+            )
+            phase_latencies[exc.agent_name] = exc.latency
+            _add_tokens(token_usage, exc.token_usage)
+            result = _human_review_result(
+                application_id,
+                reason,
+                time.perf_counter() - start_time,
+                phase_latencies,
+                token_usage,
+            )
+            self._update_metrics(result)
+            return result
+        finally:
+            audit.save()
 
-    def get_performance_dashboard(self) -> Dict[str, Any]:
-        """Return real-time operational metrics."""
-        total = self.processing_metrics["total_applications"]
-        approved = self.processing_metrics["approved"]
-        rejected = self.processing_metrics["rejected"]
-        conditional = self.processing_metrics["conditional"]
-
+    def get_performance_dashboard(self) -> dict[str, Any]:
+        """Return observed in-process processing counts and latency."""
+        total = int(self.processing_metrics["total_applications"])
         return {
             "total_applications_processed": total,
-            "approval_rate": f"{(approved / total * 100):.1f}%" if total else "N/A",
-            "rejection_rate": f"{(rejected / total * 100):.1f}%" if total else "N/A",
-            "conditional_approval_rate": f"{(conditional / total * 100):.1f}%" if total else "N/A",
-            "average_processing_time": f"{self.processing_metrics['average_processing_time']:.2f}s",
-            "average_compliance_score": f"{self.processing_metrics['compliance_score']:.1f}%",
-            "throughput": f"{(total / max(self.processing_metrics['average_processing_time'], 0.001)):.1f} apps/sec"
-            if total
-            else "N/A",
+            "approval_rate": _percentage(self.processing_metrics["approved"], total),
+            "rejection_rate": _percentage(self.processing_metrics["rejected"], total),
+            "conditional_approval_rate": _percentage(
+                self.processing_metrics["conditional"], total
+            ),
+            "human_review_rate": _percentage(
+                self.processing_metrics["needs_human_review"], total
+            ),
+            "average_processing_time": (
+                f"{self.processing_metrics['average_processing_time']:.2f}s"
+            ),
         }
 
-    # ── private helpers ────────────────────────────────────────────────────
-
-    def _update_metrics(self, result: "ProcessingResult") -> None:
-        m = self.processing_metrics
-        m["total_applications"] += 1
-        total = m["total_applications"]
-
+    def _update_metrics(self, result: ProcessingResult) -> None:
+        metrics = self.processing_metrics
+        metrics["total_applications"] += 1
+        total = int(metrics["total_applications"])
         if result.status == ApplicationStatus.APPROVED:
-            m["approved"] += 1
+            metrics["approved"] += 1
         elif result.status == ApplicationStatus.REJECTED:
-            m["rejected"] += 1
-        elif result.status in (
-            ApplicationStatus.CONDITIONALLY_APPROVED,
-            ApplicationStatus.UNDER_REVIEW,
-        ):
-            m["conditional"] += 1
-
-        # Rolling average of processing time
-        m["average_processing_time"] = (
-            m["average_processing_time"] * (total - 1) + result.processing_time
+            metrics["rejected"] += 1
+        elif result.status == ApplicationStatus.CONDITIONALLY_APPROVED:
+            metrics["conditional"] += 1
+        elif result.status == ApplicationStatus.NEEDS_HUMAN_REVIEW:
+            metrics["needs_human_review"] += 1
+        metrics["average_processing_time"] = (
+            float(metrics["average_processing_time"]) * (total - 1)
+            + result.processing_time
         ) / total
 
-        # Rolling compliance score (synthetic — agents can return a numeric tag)
-        m["compliance_score"] = (m["compliance_score"] * (total - 1) + 97.5) / total
+
+async def _run_agent(
+    runner: Any,
+    session_id: str,
+    message: str,
+    application_id: str,
+    agent_name: str,
+    output_schema: type[SchemaT],
+    audit: ApplicationAuditTrail,
+    input_hash: str,
+) -> tuple[SchemaT, float, dict[str, int]]:
+    """Invoke an ADK runner and retry at most once when its output is invalid."""
+    last_error = "No response received."
+    elapsed = 0.0
+    tokens: dict[str, int] = {}
+    for attempt in range(1, MAX_AGENT_ATTEMPTS + 1):
+        started = time.perf_counter()
+        try:
+            response, attempt_tokens = await _collect_response(
+                runner,
+                f"{session_id}-attempt-{attempt}",
+                message
+                if attempt == 1
+                else (
+                    f"{message}\n\nYour previous response did not match the required "
+                    f"JSON schema. Correct the response and return only JSON:\n"
+                    f"{json.dumps(output_schema.model_json_schema())}"
+                ),
+            )
+            elapsed += time.perf_counter() - started
+            _add_tokens(tokens, attempt_tokens)
+            parsed = output_schema.model_validate_json(response)
+            audit.record(
+                {
+                    "agent_name": agent_name,
+                    "latency_ms": round(elapsed * 1000, 3),
+                    "token_usage": tokens,
+                    "input_hash": input_hash,
+                    "output": parsed.model_dump(mode="json"),
+                    "errors": [],
+                    "attempt": attempt,
+                }
+            )
+            return parsed, elapsed, tokens
+        except (ValidationError, ValueError, RuntimeError, OSError) as exc:
+            elapsed += time.perf_counter() - started
+            last_error = _safe_error_summary(exc)
+            audit.record(
+                {
+                    "agent_name": agent_name,
+                    "latency_ms": round(elapsed * 1000, 3),
+                    "token_usage": tokens,
+                    "input_hash": input_hash,
+                    "output": None,
+                    "errors": [last_error],
+                    "attempt": attempt,
+                }
+            )
+        except Exception as exc:
+            elapsed += time.perf_counter() - started
+            last_error = f"{type(exc).__name__}: agent invocation failed."
+            audit.record(
+                {
+                    "agent_name": agent_name,
+                    "latency_ms": round(elapsed * 1000, 3),
+                    "token_usage": tokens,
+                    "input_hash": input_hash,
+                    "output": None,
+                    "errors": [last_error],
+                    "attempt": attempt,
+                }
+            )
+        if attempt < MAX_AGENT_ATTEMPTS:
+            await asyncio.sleep(0)
+    raise AgentContractError(
+        agent_name,
+        MAX_AGENT_ATTEMPTS,
+        last_error,
+        elapsed,
+        tokens,
+    )
 
 
-# ── module-level helpers ───────────────────────────────────────────────────────
-
-async def _run_agent(runner, session_id: str, message: str, app_id: str) -> str:
-    """Send a message to a runner and return the last text response."""
+async def _collect_response(
+    runner: Any,
+    session_id: str,
+    message: str,
+) -> tuple[str, dict[str, int]]:
+    """Collect final ADK text and usage metadata from a single attempt."""
     from google.genai import types as genai_types
 
-    full_response = ""
+    response = ""
+    tokens = {"input_tokens": 0, "output_tokens": 0}
     async for event in runner.run_async(
         user_id="system",
         session_id=session_id,
@@ -166,23 +367,101 @@ async def _run_agent(runner, session_id: str, message: str, app_id: str) -> str:
             parts=[genai_types.Part(text=message)],
         ),
     ):
-        if event.is_final_response():
-            if event.content and event.content.parts:
-                full_response = "".join(
-                    p.text for p in event.content.parts if hasattr(p, "text")
-                )
-    return full_response
+        usage = getattr(event, "usage_metadata", None)
+        if usage is None:
+            llm_response = getattr(event, "llm_response", None)
+            usage = getattr(llm_response, "usage_metadata", None)
+        if usage is not None:
+            tokens["input_tokens"] += int(
+                getattr(usage, "prompt_token_count", 0) or 0
+            )
+            tokens["output_tokens"] += int(
+                getattr(usage, "candidates_token_count", 0) or 0
+            )
+        if event.is_final_response() and event.content and event.content.parts:
+            response = "".join(
+                part.text for part in event.content.parts if getattr(part, "text", None)
+            )
+    if not response:
+        raise RuntimeError("Agent returned no final text response.")
+    return response, tokens
+
+
+def _safe_error_summary(error: Exception) -> str:
+    """Summarize errors without embedding untrusted input values in audit logs."""
+    if isinstance(error, ValidationError):
+        details = [
+            {"loc": item["loc"], "msg": item["msg"], "type": item["type"]}
+            for item in error.errors(include_input=False)
+        ]
+        return json.dumps(details, sort_keys=True)
+    return f"{type(error).__name__}: {error}"
+
+
+def _add_tokens(target: dict[str, int], source: dict[str, int]) -> None:
+    """Add token counts without assuming providers expose usage metadata."""
+    for key, value in source.items():
+        target[key] = target.get(key, 0) + value
+
+
+def _review_decision(decision: FinalDecisionOutput, reason: str) -> FinalDecisionOutput:
+    """Convert a decision to an explicit abstention while retaining explanation."""
+    return decision.model_copy(
+        update={
+            "decision": DecisionLabel.NEEDS_HUMAN_REVIEW,
+            "human_review_reason": reason,
+            "explanation": f"{decision.explanation} Human review required: {reason}",
+        }
+    )
+
+
+def _human_review_result(
+    application_id: str,
+    reason: str,
+    processing_time: float,
+    phase_latencies: dict[str, float],
+    token_usage: dict[str, int],
+) -> ProcessingResult:
+    """Create a clear failure result for an application requiring human review."""
+    return ProcessingResult(
+        application_id=application_id,
+        status=ApplicationStatus.NEEDS_HUMAN_REVIEW,
+        decision=f"Automated processing could not safely complete. {reason}",
+        processing_time=processing_time,
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        human_review_reason=reason,
+        phase_latencies=phase_latencies,
+        token_usage=token_usage,
+        next_steps=["Route this application to an authorized human reviewer."],
+    )
+
+
+def _status_for_decision(decision: str) -> ApplicationStatus:
+    """Map a validated decision label to the public application status."""
+    return {
+        "approve": ApplicationStatus.APPROVED,
+        "conditional": ApplicationStatus.CONDITIONALLY_APPROVED,
+        "reject": ApplicationStatus.REJECTED,
+        "needs_human_review": ApplicationStatus.NEEDS_HUMAN_REVIEW,
+    }[decision]
+
+
+def _percentage(value: int | float, total: int) -> str:
+    """Format an observed metric or mark it unavailable when no data exists."""
+    return f"{float(value) / total * 100:.1f}%" if total else "N/A"
 
 
 def _parse_status(text: str) -> ApplicationStatus:
-    """Infer ApplicationStatus from the approval agent's free-text output."""
+    """Map legacy free-text decisions to status for backward compatibility."""
     text_lower = text.lower()
+    if "needs_human_review" in text_lower or "human review" in text_lower:
+        return ApplicationStatus.NEEDS_HUMAN_REVIEW
     if "conditionally approved" in text_lower or "conditional approval" in text_lower:
         return ApplicationStatus.CONDITIONALLY_APPROVED
+    if "rejected" in text_lower or "denied" in text_lower or "not approved" in text_lower:
+        return ApplicationStatus.REJECTED
     if "approved" in text_lower:
         return ApplicationStatus.APPROVED
-    if "rejected" in text_lower or "denied" in text_lower:
-        return ApplicationStatus.REJECTED
     if "additional information" in text_lower or "requires info" in text_lower:
         return ApplicationStatus.REQUIRES_INFO
     return ApplicationStatus.UNDER_REVIEW

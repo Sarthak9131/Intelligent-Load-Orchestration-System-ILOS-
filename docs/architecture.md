@@ -1,56 +1,60 @@
-# Architecture Deep Dive
+# Prototype Architecture
 
-## Why Multi-Agent?
+This repository is a learning prototype for agent orchestration. It does not
+make real lending decisions, perform verified regulatory checks, or represent a
+production loan platform.
 
-A single LLM call trying to intake documents, extract financials, assess four risk dimensions, check compliance, AND make a final underwriting decision will produce lower-quality output than specialists each doing one job extremely well.
+## Request flow
 
-Multi-agent systems mirror how real loan departments work:
-- **Document team** — organises the application package
-- **Risk analysts** — each owns one domain (income, credit, employment, collateral)
-- **Compliance** — mandatory regulatory checkpoint
-- **Underwriter** — final authority with full context
-
-## Sequential vs Parallel Decision Guide
-
-| Use Sequential when... | Use Parallel when... |
-|------------------------|----------------------|
-| Step B needs Step A's output | Steps are independent |
-| Order matters for quality | Speed matters |
-| Authority chain required | Same input, different lenses |
-| Audit trail needed per step | Results aggregated at end |
-
-## State Transfer Between Agents
-
-Each agent in a `SequentialAgent` receives the **full conversation history** from all previous agents. This means the `FinalUnderwriterAgent` has complete access to:
-1. The raw application data
-2. The document processing output
-3. The risk assessment from all four parallel agents
-4. The risk analyst's recommendation
-5. The compliance reviewer's approval
-
-This rich context enables high-quality final decisions without information loss.
-
-## Risk Scoring Model
-
-```
-Weighted Risk Score = 
-    Income Score    × 0.35   (ability to pay — most important)
-  + Credit Score    × 0.30   (willingness to pay — historical behaviour)  
-  + Employment Score× 0.25   (income stability)
-  + Collateral Score× 0.10   (safety net if default)
-
-Decision thresholds:
-  0–30   → APPROVE (standard terms)
-  31–60  → CONDITIONALLY APPROVE
-  61–80  → CONDITIONALLY APPROVE (enhanced monitoring) or REJECT if DTI > 43%
-  81–100 → REJECT
+```text
+Application text
+    |
+    v
+DocumentProcessingPipeline (sequential)
+    DocumentIntake -> DataExtraction -> Validation
+    |
+    v
+RiskAssessmentWorkflow
+    Income, Credit, Employment, Collateral (parallel)
+    -> RiskAggregator (sequential)
+    |
+    v
+ApprovalWorkflow (sequential decision chain)
+    RiskAnalyst -> ComplianceReviewer -> FinalUnderwriter
+    |
+    v
+Pydantic-validated decision and JSON audit record
 ```
 
-## Compliance Checkpoints
+Document extraction is sequential because each step consumes prior context.
+The four specialist risk analyses are independent and share the same input, so
+they are represented as parallel tasks. Their outputs are then consolidated in
+a dependent step. The authority handoff is a **sequential decision chain**, not
+a separate handoff protocol: each reviewer runs after the previous reviewer.
 
-Every application is automatically verified against:
-- **ECOA** — Equal Credit Opportunity Act (no discrimination)
-- **FCRA** — Fair Credit Reporting Act (proper credit report usage)
-- **TILA** — Truth in Lending Act (rate and fee disclosures)
-- **BSA/AML** — Bank Secrecy Act anti-money laundering
-- **Internal policy** — DTI ≤ 43%, LTI ≤ 5×
+## Reliability boundary
+
+Agent contracts are defined with Pydantic models in `src/schemas.py`. Structured
+outputs are validated at the orchestration boundary. Invalid output is retried
+once (two total attempts); if it remains invalid, processing returns
+`needs_human_review` rather than inferring a decision. Each phase records its
+latency, available token usage, input hash, validated output, and errors in a
+per-application JSON audit file.
+
+The configured default is `anthropic/claude-sonnet-4-6`, used through LiteLLM.
+The model identifier follows LiteLLM's Anthropic provider documentation:
+[LiteLLM Anthropic provider](https://docs.litellm.ai/docs/providers/anthropic).
+Set `LLM_MODEL` to an installed LiteLLM-supported provider/model identifier when
+changing providers. Model calls require provider credentials.
+
+## Important limitations
+
+- The workflow uses LLM-generated assessments and prompts; it is not a
+  validated credit-risk model or deterministic underwriting policy.
+- A compliance agent response is not legal advice or proof of regulatory
+  compliance.
+- The in-memory ADK session service is process-local and is not durable.
+- The audit log is a prototype artifact, not a tamper-evident or access-
+  controlled compliance ledger.
+- Evaluation on generated labels describes behavior on those synthetic cases
+  only; it does not establish real-world accuracy, fairness, or suitability.
