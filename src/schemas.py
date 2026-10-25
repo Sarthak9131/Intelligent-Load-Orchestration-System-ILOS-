@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class Contract(BaseModel):
@@ -226,6 +226,18 @@ class FinalDecisionOutput(Contract):
     explanation: str = Field(min_length=1)
     conditions: list[str] = Field(default_factory=list)
     human_review_reason: str | None = None
+
+    @model_validator(mode="after")
+    def validate_reason_order(self) -> "FinalDecisionOutput":
+        ranks = [reason.rank for reason in self.reason_codes]
+        if ranks != sorted(set(ranks)):
+            raise ValueError("reason_codes must have unique, ascending ranks")
+        if (
+            self.decision == DecisionLabel.NEEDS_HUMAN_REVIEW
+            and not self.human_review_reason
+        ):
+            raise ValueError("human_review_reason is required for review decisions")
+        return self
 
 
 class AgentErrorOutput(Contract):

@@ -10,6 +10,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from .privacy import mask_pii
+
 logger = logging.getLogger(__name__)
 _lock = threading.RLock()
 _agent_started: dict[tuple[str, str], float] = {}
@@ -54,8 +56,12 @@ def after_agent(context: Any) -> None:
             if started is not None
             else None,
             "token_usage": token_usage,
-            "output": _output_text(getattr(context, "output", None)),
-            "errors": [str(context.error)] if getattr(context, "error", None) else [],
+            "output": mask_pii(_output_text(getattr(context, "output", None)) or ""),
+            "errors": (
+                [mask_pii(str(context.error))]
+                if getattr(context, "error", None)
+                else []
+            ),
         }
     )
     _record(event)
@@ -69,7 +75,7 @@ def on_model_error(context: Any, request: Any, error: Exception) -> None:
             "latency_ms": None,
             "token_usage": {},
             "output": None,
-            "errors": [f"{type(error).__name__}: {error}"],
+            "errors": [mask_pii(f"{type(error).__name__}: {error}")],
         }
     )
     _record(event)
@@ -83,7 +89,7 @@ def _agent_key(context: Any) -> tuple[str, str]:
 
 
 def _event_base(context: Any) -> dict[str, Any]:
-    user_content = _output_text(getattr(context, "user_content", None)) or ""
+    user_content = mask_pii(_output_text(getattr(context, "user_content", None)) or "")
     session = getattr(context, "session", None)
     session_id = str(getattr(session, "id", ""))
     match = _APPLICATION_ID.search(session_id)

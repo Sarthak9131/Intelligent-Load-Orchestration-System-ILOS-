@@ -1,10 +1,10 @@
 {
   "average_latency_seconds_by_phase": {
-    "approval_workflow": 0.00010885000015453746,
-    "document_processing": 0.00018149999843444675,
-    "risk_assessment": 0.00010451533365994692
+    "approval_workflow": 0.00016554866587587943,
+    "document_processing": 0.00024715199950151143,
+    "risk_assessment": 0.00014918333443347364
   },
-  "average_total_latency_seconds": 0.0006220740008090312,
+  "average_total_latency_seconds": 0.0019855606672354044,
   "case_predictions": [
     {
       "case_id": "SYN-001",
@@ -207,11 +207,11 @@
     {
       "case_id": "SYN-016",
       "expected": "approve",
-      "predicted": "approve",
+      "predicted": "conditional",
       "predictions": [
-        "approve",
-        "approve",
-        "approve"
+        "conditional",
+        "conditional",
+        "conditional"
       ],
       "scenario_tags": [
         "synthetic",
@@ -381,11 +381,11 @@
     {
       "case_id": "SYN-028",
       "expected": "approve",
-      "predicted": "approve",
+      "predicted": "conditional",
       "predictions": [
-        "approve",
-        "approve",
-        "approve"
+        "conditional",
+        "conditional",
+        "conditional"
       ],
       "scenario_tags": [
         "synthetic",
@@ -493,11 +493,11 @@
     {
       "case_id": "SYN-036",
       "expected": "reject",
-      "predicted": "reject",
+      "predicted": "conditional",
       "predictions": [
-        "reject",
-        "reject",
-        "reject"
+        "conditional",
+        "conditional",
+        "conditional"
       ],
       "scenario_tags": [
         "synthetic",
@@ -509,11 +509,11 @@
     {
       "case_id": "SYN-037",
       "expected": "reject",
-      "predicted": "reject",
+      "predicted": "conditional",
       "predictions": [
-        "reject",
-        "reject",
-        "reject"
+        "conditional",
+        "conditional",
+        "conditional"
       ],
       "scenario_tags": [
         "synthetic",
@@ -523,11 +523,11 @@
     {
       "case_id": "SYN-038",
       "expected": "reject",
-      "predicted": "reject",
+      "predicted": "conditional",
       "predictions": [
-        "reject",
-        "reject",
-        "reject"
+        "conditional",
+        "conditional",
+        "conditional"
       ],
       "scenario_tags": [
         "synthetic",
@@ -537,11 +537,11 @@
     {
       "case_id": "SYN-039",
       "expected": "reject",
-      "predicted": "reject",
+      "predicted": "conditional",
       "predictions": [
-        "reject",
-        "reject",
-        "reject"
+        "conditional",
+        "conditional",
+        "conditional"
       ],
       "scenario_tags": [
         "synthetic",
@@ -552,11 +552,11 @@
     {
       "case_id": "SYN-040",
       "expected": "reject",
-      "predicted": "reject",
+      "predicted": "conditional",
       "predictions": [
-        "reject",
-        "reject",
-        "reject"
+        "conditional",
+        "conditional",
+        "conditional"
       ],
       "scenario_tags": [
         "synthetic",
@@ -566,11 +566,11 @@
     {
       "case_id": "SYN-041",
       "expected": "reject",
-      "predicted": "reject",
+      "predicted": "conditional",
       "predictions": [
-        "reject",
-        "reject",
-        "reject"
+        "conditional",
+        "conditional",
+        "conditional"
       ],
       "scenario_tags": [
         "synthetic",
@@ -580,11 +580,11 @@
     {
       "case_id": "SYN-042",
       "expected": "reject",
-      "predicted": "reject",
+      "predicted": "conditional",
       "predictions": [
-        "reject",
-        "reject",
-        "reject"
+        "conditional",
+        "conditional",
+        "conditional"
       ],
       "scenario_tags": [
         "synthetic",
@@ -609,11 +609,11 @@
     {
       "case_id": "SYN-044",
       "expected": "reject",
-      "predicted": "reject",
+      "predicted": "conditional",
       "predictions": [
-        "reject",
-        "reject",
-        "reject"
+        "conditional",
+        "conditional",
+        "conditional"
       ],
       "scenario_tags": [
         "synthetic",
@@ -637,11 +637,11 @@
     {
       "case_id": "SYN-046",
       "expected": "reject",
-      "predicted": "reject",
+      "predicted": "conditional",
       "predictions": [
-        "reject",
-        "reject",
-        "reject"
+        "conditional",
+        "conditional",
+        "conditional"
       ],
       "scenario_tags": [
         "synthetic",
@@ -666,11 +666,11 @@
     {
       "case_id": "SYN-048",
       "expected": "reject",
-      "predicted": "reject",
+      "predicted": "conditional",
       "predictions": [
-        "reject",
-        "reject",
-        "reject"
+        "conditional",
+        "conditional",
+        "conditional"
       ],
       "scenario_tags": [
         "synthetic",
@@ -681,11 +681,11 @@
     {
       "case_id": "SYN-049",
       "expected": "reject",
-      "predicted": "reject",
+      "predicted": "conditional",
       "predictions": [
-        "reject",
-        "reject",
-        "reject"
+        "conditional",
+        "conditional",
+        "conditional"
       ],
       "scenario_tags": [
         "synthetic",
@@ -695,11 +695,11 @@
     {
       "case_id": "SYN-050",
       "expected": "reject",
-      "predicted": "reject",
+      "predicted": "conditional",
       "predictions": [
-        "reject",
-        "reject",
-        "reject"
+        "conditional",
+        "conditional",
+        "conditional"
       ],
       "scenario_tags": [
         "synthetic",
@@ -709,7 +709,7 @@
   ],
   "dataset": "C:\\Users\\JAGGA\\Desktop\\ADK Demo\\Multi-Agent-Loan-Processing-System\\evals\\data\\synthetic_loan_applications.jsonl",
   "dataset_size": 50,
-  "human_review_decisions": 21,
+  "human_review_decisions": 93,
   "label_definition": "Expected outcomes are generated from the rule in generate_dataset.py. They are synthetic labels, not historical loan outcomes.",
   "limitations": [
     "Synthetic cases and labels do not establish real-world model quality.",
@@ -720,7 +720,7 @@
   ],
   "llm_mode": "stub",
   "metrics": {
-    "accuracy": 0.98,
+    "accuracy": 0.7,
     "class_order": [
       "approve",
       "conditional",
@@ -728,8 +728,8 @@
     ],
     "confusion_matrix": {
       "approve": {
-        "approve": 15,
-        "conditional": 0,
+        "approve": 13,
+        "conditional": 2,
         "reject": 0
       },
       "conditional": {
@@ -739,27 +739,27 @@
       },
       "reject": {
         "approve": 0,
-        "conditional": 1,
-        "reject": 13
+        "conditional": 13,
+        "reject": 1
       }
     },
     "per_class": {
       "approve": {
-        "f1": 1.0,
+        "f1": 0.9285714285714286,
         "precision": 1.0,
-        "recall": 1.0,
+        "recall": 0.8666666666666667,
         "support": 15
       },
       "conditional": {
-        "f1": 0.9767441860465117,
-        "precision": 0.9545454545454546,
+        "f1": 0.7368421052631579,
+        "precision": 0.5833333333333334,
         "recall": 1.0,
         "support": 21
       },
       "reject": {
-        "f1": 0.962962962962963,
+        "f1": 0.13333333333333333,
         "precision": 1.0,
-        "recall": 0.9285714285714286,
+        "recall": 0.07142857142857142,
         "support": 14
       }
     }
@@ -778,6 +778,208 @@
         "synthetic",
         "borderline_dti"
       ]
+    },
+    {
+      "case_id": "SYN-016",
+      "conflicting_fields": [],
+      "expected": "approve",
+      "likely_reasons": [
+        "The case is near a credit threshold."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit",
+        "credit_threshold_edge"
+      ]
+    },
+    {
+      "case_id": "SYN-028",
+      "conflicting_fields": [],
+      "expected": "approve",
+      "likely_reasons": [
+        "The case is near a credit threshold."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit",
+        "credit_threshold_edge"
+      ]
+    },
+    {
+      "case_id": "SYN-036",
+      "conflicting_fields": [],
+      "expected": "reject",
+      "likely_reasons": [
+        "The case is near a credit threshold."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "borderline_credit",
+        "high_risk",
+        "credit_threshold_edge"
+      ]
+    },
+    {
+      "case_id": "SYN-037",
+      "conflicting_fields": [],
+      "expected": "reject",
+      "likely_reasons": [
+        "Rule ordering or mapping from human review to the conditional class."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-038",
+      "conflicting_fields": [],
+      "expected": "reject",
+      "likely_reasons": [
+        "Rule ordering or mapping from human review to the conditional class."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-039",
+      "conflicting_fields": [],
+      "expected": "reject",
+      "likely_reasons": [
+        "Income stability evidence is limited for self-employment."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "self_employed_income",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-040",
+      "conflicting_fields": [],
+      "expected": "reject",
+      "likely_reasons": [
+        "Rule ordering or mapping from human review to the conditional class."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-041",
+      "conflicting_fields": [],
+      "expected": "reject",
+      "likely_reasons": [
+        "Rule ordering or mapping from human review to the conditional class."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-042",
+      "conflicting_fields": [],
+      "expected": "reject",
+      "likely_reasons": [
+        "Rule ordering or mapping from human review to the conditional class."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-044",
+      "conflicting_fields": [],
+      "expected": "reject",
+      "likely_reasons": [
+        "Rule ordering or mapping from human review to the conditional class."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-046",
+      "conflicting_fields": [],
+      "expected": "reject",
+      "likely_reasons": [
+        "Rule ordering or mapping from human review to the conditional class."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-048",
+      "conflicting_fields": [],
+      "expected": "reject",
+      "likely_reasons": [
+        "Income stability evidence is limited for self-employment."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "self_employed_income",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-049",
+      "conflicting_fields": [],
+      "expected": "reject",
+      "likely_reasons": [
+        "Rule ordering or mapping from human review to the conditional class."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
+    },
+    {
+      "case_id": "SYN-050",
+      "conflicting_fields": [],
+      "expected": "reject",
+      "likely_reasons": [
+        "Rule ordering or mapping from human review to the conditional class."
+      ],
+      "missing_fields": [],
+      "predicted": "conditional",
+      "scenario_tags": [
+        "synthetic",
+        "high_risk"
+      ]
     }
   ],
   "model": "anthropic/claude-sonnet-4-6",
@@ -788,14 +990,14 @@
   "repeats_per_application": 3,
   "review_mapping": "NEEDS_HUMAN_REVIEW is mapped to conditional for the three-class classification metrics; the separate review count is reported.",
   "schema_version": 1,
-  "token_cost_estimate_usd": 0.576567,
+  "token_cost_estimate_usd": 0.573867,
   "token_cost_pricing": {
     "input_cost_per_million_tokens_usd": 3.0,
     "output_cost_per_million_tokens_usd": 15.0,
     "source": "LiteLLM runtime model-cost metadata"
   },
   "token_usage": {
-    "input_tokens": 67539,
+    "input_tokens": 66639,
     "output_tokens": 24930,
     "source": "Character-based estimates in stub mode; provider usage metadata in ADK mode when available."
   }

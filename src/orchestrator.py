@@ -18,10 +18,12 @@ from .agents.approval_workflow import approval_runner
 from .agents.document_pipeline import pipeline_runner
 from .agents.risk_team import risk_runner
 from .models import ApplicationStatus, ProcessingResult
+from .privacy import mask_pii, mask_sensitive_data
 from .schemas import (
     DecisionLabel,
     DocumentIntakeInput,
     FinalDecisionOutput,
+    ReasonCode,
     RiskAggregationOutput,
     ValidationOutput,
 )
@@ -57,7 +59,7 @@ class ApplicationAuditTrail:
 
     def record(self, event: dict[str, Any]) -> None:
         """Append an event and emit it as a structured JSON log line."""
-        record = {"application_id": self.application_id, **event}
+        record = mask_sensitive_data({"application_id": self.application_id, **event})
         self.events.append(record)
         logger.info("%s", json.dumps(record, sort_keys=True, default=str))
 
@@ -120,11 +122,12 @@ class LoanProcessingOrchestrator:
         audit = ApplicationAuditTrail(application_id)
         phase_latencies: dict[str, float] = {}
         token_usage: dict[str, int] = {}
-        input_hash = hashlib.sha256(application_data.encode("utf-8")).hexdigest()
+        masked_application_data = mask_pii(application_data)
+        input_hash = hashlib.sha256(masked_application_data.encode("utf-8")).hexdigest()
 
         try:
             intake_input = DocumentIntakeInput(
-                application_text=application_data,
+                application_text=masked_application_data,
                 application_id=application_id,
             )
             document_result, latency, tokens = await _run_agent(
@@ -146,7 +149,7 @@ class LoanProcessingOrchestrator:
                 json.dumps(
                     {
                         "application_id": application_id,
-                        "application_text": application_data,
+                        "application_text": masked_application_data,
                         "document_validation": document_result.model_dump(mode="json"),
                     }
                 ),
@@ -165,7 +168,7 @@ class LoanProcessingOrchestrator:
                 json.dumps(
                     {
                         "application_id": application_id,
-                        "application_text": application_data,
+                        "application_text": masked_application_data,
                         "document_validation": document_result.model_dump(mode="json"),
                         "risk_assessment": risk_result.model_dump(mode="json"),
                     }
@@ -179,27 +182,33 @@ class LoanProcessingOrchestrator:
             phase_latencies["approval_workflow"] = latency
             _add_tokens(token_usage, tokens)
 
+            review_reason = None
             if document_result.requires_human_review:
-                approval_result = _review_decision(
-                    approval_result,
-                    "Document validation identified missing or inconsistent information.",
+                review_reason = (
+                    "Document validation identified missing or inconsistent information."
                 )
-            elif risk_result.risk_band.value == "high" and approval_result.confidence < 0.7:
-                approval_result = _review_decision(
-                    approval_result,
-                    "Low decision confidence on a high-risk application.",
+            elif approval_result.confidence < 0.7:
+                review_reason = (
+                    "Decision confidence is below the prototype review threshold."
                 )
+            else:
+                review_reason = _borderline_risk_reason(risk_result.risk_score)
+            if review_reason:
+                approval_result = _review_decision(approval_result, review_reason)
 
             result = ProcessingResult(
                 application_id=application_id,
                 status=_status_for_decision(approval_result.decision.value),
-                decision=approval_result.explanation,
+                decision=mask_pii(approval_result.explanation),
                 processing_time=time.perf_counter() - start_time,
                 timestamp=datetime.now(timezone.utc).isoformat(),
                 risk_assessment=risk_result.model_dump_json(),
                 compliance_notes="Compliance status must be verified by an accountable reviewer.",
-                reason_codes=[reason.model_dump(mode="json") for reason in approval_result.reason_codes],
-                explanation=approval_result.explanation,
+                reason_codes=[
+                    mask_sensitive_data(reason.model_dump(mode="json"))
+                    for reason in approval_result.reason_codes
+                ],
+                explanation=mask_pii(approval_result.explanation),
                 confidence=approval_result.confidence,
                 human_review_reason=approval_result.human_review_reason,
                 phase_latencies=phase_latencies,
@@ -227,7 +236,7 @@ class LoanProcessingOrchestrator:
                     "token_usage": exc.token_usage,
                     "input_hash": input_hash,
                     "output": None,
-                    "errors": [reason],
+                    "errors": [mask_pii(reason)],
                 }
             )
             phase_latencies[exc.agent_name] = exc.latency
@@ -408,7 +417,7 @@ def _safe_error_summary(error: Exception) -> str:
             for item in error.errors(include_input=False)
         ]
         return json.dumps(details, sort_keys=True)
-    return f"{type(error).__name__}: {error}"
+    return mask_pii(f"{type(error).__name__}: {error}")
 
 
 def _add_tokens(target: dict[str, int], source: dict[str, int]) -> None:
@@ -419,13 +428,33 @@ def _add_tokens(target: dict[str, int], source: dict[str, int]) -> None:
 
 def _review_decision(decision: FinalDecisionOutput, reason: str) -> FinalDecisionOutput:
     """Convert a decision to an explicit abstention while retaining explanation."""
+    ranked_reasons = [
+        ReasonCode(
+            code="HUMAN_REVIEW_REQUIRED",
+            rank=1,
+            description=reason,
+        )
+    ]
+    ranked_reasons.extend(
+        item.model_copy(update={"rank": rank})
+        for rank, item in enumerate(decision.reason_codes, start=2)
+    )
     return decision.model_copy(
         update={
             "decision": DecisionLabel.NEEDS_HUMAN_REVIEW,
+            "reason_codes": ranked_reasons,
             "human_review_reason": reason,
             "explanation": f"{decision.explanation} Human review required: {reason}",
         }
     )
+
+
+def _borderline_risk_reason(risk_score: float) -> str | None:
+    """Route scores near prototype risk-band cutoffs to a human reviewer."""
+    for threshold in (30.0, 60.0, 80.0):
+        if abs(risk_score - threshold) <= 5.0:
+            return f"Risk score is within five points of the {threshold:g} cutoff."
+    return None
 
 
 def _human_review_result(
@@ -443,6 +472,16 @@ def _human_review_result(
         processing_time=processing_time,
         timestamp=datetime.now(timezone.utc).isoformat(),
         human_review_reason=reason,
+        reason_codes=[
+            {
+                "code": "AGENT_CONTRACT_FAILURE",
+                "rank": 1,
+                "description": mask_pii(reason),
+            }
+        ],
+        explanation=mask_pii(
+            f"Automated processing could not safely complete. {reason}"
+        ),
         phase_latencies=phase_latencies,
         token_usage=token_usage,
         next_steps=["Route this application to an authorized human reviewer."],

@@ -1,0 +1,159 @@
+{
+  "comparisons": [
+    {
+      "control_decision": "needs_human_review",
+      "disagreement": false,
+      "pair_id": "SYN-001-applicant_name",
+      "proxy": "applicant_name",
+      "variant_decision": "needs_human_review"
+    },
+    {
+      "control_decision": "needs_human_review",
+      "disagreement": false,
+      "pair_id": "SYN-001-zip_code",
+      "proxy": "zip_code",
+      "variant_decision": "needs_human_review"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-002-applicant_name",
+      "proxy": "applicant_name",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-002-zip_code",
+      "proxy": "zip_code",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "needs_human_review",
+      "disagreement": false,
+      "pair_id": "SYN-003-applicant_name",
+      "proxy": "applicant_name",
+      "variant_decision": "needs_human_review"
+    },
+    {
+      "control_decision": "needs_human_review",
+      "disagreement": false,
+      "pair_id": "SYN-003-zip_code",
+      "proxy": "zip_code",
+      "variant_decision": "needs_human_review"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-004-applicant_name",
+      "proxy": "applicant_name",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-004-zip_code",
+      "proxy": "zip_code",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-005-applicant_name",
+      "proxy": "applicant_name",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-005-zip_code",
+      "proxy": "zip_code",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-006-applicant_name",
+      "proxy": "applicant_name",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-006-zip_code",
+      "proxy": "zip_code",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-007-applicant_name",
+      "proxy": "applicant_name",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-007-zip_code",
+      "proxy": "zip_code",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-008-applicant_name",
+      "proxy": "applicant_name",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-008-zip_code",
+      "proxy": "zip_code",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-009-applicant_name",
+      "proxy": "applicant_name",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-009-zip_code",
+      "proxy": "zip_code",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-010-applicant_name",
+      "proxy": "applicant_name",
+      "variant_decision": "approved"
+    },
+    {
+      "control_decision": "approved",
+      "disagreement": false,
+      "pair_id": "SYN-010-zip_code",
+      "proxy": "zip_code",
+      "variant_decision": "approved"
+    }
+  ],
+  "decision_disagreement_rate": 0.0,
+  "decision_disagreements": 0,
+  "limitations": [
+    "This is a small synthetic proxy perturbation test, not a legal fairness assessment.",
+    "Equal decisions for names or ZIP codes do not establish fairness across protected groups.",
+    "The test does not measure disparate impact, calibration, error rates, or intersectional effects.",
+    "The stub ignores ZIP codes and name masking removes names, so stub results do not predict live-model behavior."
+  ],
+  "llm_mode": "stub",
+  "pair_count": 20,
+  "proxies_tested": [
+    "applicant_name",
+    "zip_code"
+  ],
+  "schema_version": 1
+}

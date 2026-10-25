@@ -35,6 +35,16 @@ def test_schema_rejects_invalid_scores_and_extra_fields():
     with pytest.raises(ValidationError):
         ValidationOutput(is_valid=True, completeness_score=90, unexpected=True)
 
+    with pytest.raises(ValidationError):
+        FinalDecisionOutput(
+            decision=DecisionLabel.NEEDS_HUMAN_REVIEW,
+            confidence=0.5,
+            reason_codes=[
+                ReasonCode(code="REVIEW", rank=1, description="Needs review.")
+            ],
+            explanation="Human review is required.",
+        )
+
 
 def test_agent_callback_appends_per_step_audit_event(monkeypatch, tmp_path):
     monkeypatch.setenv("AUDIT_DIR", str(tmp_path))
@@ -44,7 +54,7 @@ def test_agent_callback_appends_per_step_audit_event(monkeypatch, tmp_path):
         user_content="Synthetic input",
         session=SimpleNamespace(id="risk-LA-20261025-ABC123-attempt-1"),
         state={},
-        output='{"risk_score": 10}',
+        output='{"applicant_name":"Alex Rivera","ssn":"123-45-6789"}',
         error=None,
     )
 
@@ -56,7 +66,8 @@ def test_agent_callback_appends_per_step_audit_event(monkeypatch, tmp_path):
     assert event["agent_name"] == "IncomeAnalysisAgent"
     assert event["latency_ms"] >= 0
     assert event["input_hash"]
-    assert event["output"] == '{"risk_score": 10}'
+    assert "Alex Rivera" not in event["output"]
+    assert "123-45-6789" not in event["output"]
 
 
 @pytest.mark.asyncio
@@ -199,3 +210,66 @@ async def test_schema_failure_routes_to_human_review(monkeypatch, tmp_path):
     assert result.status == ApplicationStatus.NEEDS_HUMAN_REVIEW
     assert "failed schema validation" in result.human_review_reason
     assert (tmp_path / f"{result.application_id}.json").exists()
+
+
+@pytest.mark.parametrize(
+    ("risk_score", "confidence", "expected_reason"),
+    [
+        (20, 0.5, "Decision confidence"),
+        (30, 0.95, "Risk score is within five points"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_low_confidence_and_borderline_scores_route_to_review(
+    monkeypatch,
+    tmp_path,
+    risk_score,
+    confidence,
+    expected_reason,
+):
+    monkeypatch.setenv("AUDIT_DIR", str(tmp_path))
+    monkeypatch.setattr(orchestration, "pipeline_runner", object())
+    monkeypatch.setattr(orchestration, "risk_runner", object())
+    monkeypatch.setattr(orchestration, "approval_runner", object())
+
+    async def fake_run_agent(
+        runner,
+        session_id,
+        message,
+        application_id,
+        agent_name,
+        output_schema,
+        audit,
+        input_hash,
+    ):
+        if output_schema is ValidationOutput:
+            output = ValidationOutput(is_valid=True, completeness_score=90)
+        elif output_schema is RiskAggregationOutput:
+            output = RiskAggregationOutput(
+                risk_score=risk_score,
+                risk_band=RiskBand.LOW,
+            )
+        else:
+            output = FinalDecisionOutput(
+                decision=DecisionLabel.APPROVE,
+                confidence=confidence,
+                reason_codes=[
+                    ReasonCode(
+                        code="TEST",
+                        rank=1,
+                        description="Test reason.",
+                    )
+                ],
+                explanation="Test decision.",
+            )
+        audit.record({"agent_name": agent_name, "input_hash": input_hash})
+        return output, 0.01, {}
+
+    monkeypatch.setattr(orchestration, "_run_agent", fake_run_agent)
+    result = await LoanProcessingOrchestrator(llm_mode="adk").process_loan_application(
+        "Synthetic application."
+    )
+
+    assert result.status == ApplicationStatus.NEEDS_HUMAN_REVIEW
+    assert expected_reason in result.human_review_reason
+    assert result.reason_codes[0]["code"] == "HUMAN_REVIEW_REQUIRED"
