@@ -1,9 +1,11 @@
-# Multi-Agent Loan Processing Prototype
+## Intelligent Load Orchestration System (ILOS)
 
-A small, synthetic-data prototype for demonstrating typed agent orchestration
-with Google ADK. It shows sequential document processing, parallel specialist
-checks, a sequential decision chain, schema validation, and human-review
-routing. It is not a lending product, credit-risk model, or production system.
+A synthetic-data, interview-ready prototype that demonstrates typed agent
+orchestration with Google ADK for intelligent loan processing and orchestration.
+It highlights sequential document processing, parallel specialist checks, a
+sequential decision chain, schema validation, and human-review routing for a
+healthcare/insurance-style risk workflow. It is not a lending product,
+credit-risk model, or production system.
 
 ## Problem and scope
 
