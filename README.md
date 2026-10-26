@@ -1,6 +1,6 @@
 # Intelligent Load Orchestration System (ILOS)
 
-A synthetic-data, interview-ready prototype demonstrating typed agent orchestration with Google ADK for intelligent loan processing and workflow orchestration.
+A synthetic-data, prototype agent orchestration with Google ADK for intelligent loan processing and workflow orchestration.
 
 The project showcases sequential document processing, parallel specialist assessments, a sequential decision chain, schema validation, audit logging, and human-review routing for loan-processing and healthcare/insurance-style workflows.
 
