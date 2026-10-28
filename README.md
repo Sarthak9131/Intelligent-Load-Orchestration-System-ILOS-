@@ -1,4 +1,4 @@
-# Intelligent Load Orchestration System (ILOS)
+# Intelligent Loan Orchestration System (ILOS)
 
 A synthetic-data, prototype agent orchestration with Google ADK for intelligent loan processing and workflow orchestration.
 
